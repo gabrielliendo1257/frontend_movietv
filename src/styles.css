@@ -1,0 +1,281 @@
+/* You can add global styles to this file, and also import other style files */
+/* =======================================
+   🌐 Base global al estilo Tailwind Reset
+   ======================================= */
+
+/* 1. Reset general */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    font-family: var(--font-family, 'Inter', 'Segoe UI', Roboto, sans-serif), serif;
+    color-scheme: light dark;
+    font-size: 16px;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: #000000;
+    color: var(--color-card);
+    font-size: var(--font-base);
+    font-weight: 400;
+    line-height: 1.6;
+}
+
+/* 2. Typography reset */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+p {
+    margin-bottom: 1rem;
+}
+
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+ul,
+ol {
+    list-style: none;
+}
+
+img,
+video,
+svg,
+canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+img {
+    border-radius: 8px;
+    width: 100%;
+    height: auto;
+    box-shadow: 0px 0px 30px #000000;
+}
+
+/* Inputs */
+button,
+input,
+textarea,
+select {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    outline: none;
+}
+
+button {
+    cursor: pointer;
+}
+
+textarea {
+    resize: vertical;
+}
+
+/* Table normalization */
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+}
+
+/* =======================================
+   🧩 Variables globales de diseño
+   ======================================= */
+:root {
+    /* Colores principales */
+    --color-bg: #f8fafc;
+    --color-card: #ffffff;
+    --color-text: #1e293b;
+    --color-heading: #0f172a;
+    --color-muted: #64748b;
+    --color-border: #e2e8f0;
+    --color-primary: #4b8cff;
+    --color-primary-hover: #3a78e0;
+    --color-danger: #ef4444;
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+
+    /* Card Size */
+    --card-size-xs: 160px;
+    --card-size-sm: 170px;
+    --card-size-md: 180px;
+    --card-size-lg: 210px;
+
+    /* Tipografía */
+    --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
+
+    /* Tamaños base */
+    --font-base: 16px;
+    --radius: 12px;
+    --transition: 0.25s ease-in-out;
+
+    /* Espaciado */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 40px;
+
+    /* Breakpoints */
+    --breakpoint-mobile: 480px;
+    --breakpoint-tablet: 768px;
+    --breakpoint-desktop: 1200px;
+
+    /* Tipografía responsiva */
+    --text-xs: clamp(0.75rem, 0.7vw, 0.8rem);
+    --text-sm: clamp(0.875rem, 0.8vw, 0.95rem);
+    --text-md: clamp(1rem, 1vw, 1.1rem);
+    --text-lg: clamp(1.25rem, 1.5vw, 1.5rem);
+    --text-xl: clamp(1.5rem, 2vw, 2rem);
+    --text-2xl: clamp(2rem, 3vw, 3rem);
+}
+
+/* =======================================
+   📱 Responsive font scaling (Desktop / Tablet / Mobile)
+   ======================================= */
+body {
+    font-size: var(--text-md);
+}
+
+@media (max-width: 1200px) {
+    body {
+        font-size: var(--text-sm);
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        font-size: var(--text-xs);
+    }
+}
+
+/* =======================================
+   🧰 Utilidades base (opcional)
+   ======================================= */
+.container {
+    width: min(100% - 2rem, 1200px);
+    margin-inline: auto;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: var(--color-muted);
+}
+
+.rounded {
+    border-radius: var(--radius);
+}
+
+.shadow-sm {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.shadow-md {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.shadow-lg {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+.btn {
+    background: #646cff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.25s;
+
+    &:hover {
+        background: #7c82ff;
+    }
+}
+
+.button__send {
+    line-height: 1;
+    text-decoration: none;
+    display: inline-flex;
+    border: none;
+    cursor: pointer;
+    align-items: center;
+    gap: 0.75rem;
+    background-color: #7808d0;
+    color: #fff;
+    border-radius: 10rem;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    padding-left: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background-color 0.3s;
+}
+
+.button__icon-wrapper {
+    flex-shrink: 0;
+    width: 25px;
+    height: 25px;
+    position: relative;
+    color: #7808d0;
+    background-color: #fff;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+}
+
+.button__send:hover {
+    background-color: #000;
+}
+
+.button__send:hover .button__icon-wrapper {
+    color: #000;
+}
+
+.button__icon-svg--copy {
+    position: absolute;
+    transform: translate(-150%, 150%);
+}
+
+.button__send:hover .button__icon-svg:first-child {
+    transition: transform 0.3s ease-in-out;
+    transform: translate(150%, -150%);
+}
+
+.button__send:hover .button__icon-svg--copy {
+    transition: transform 0.3s ease-in-out 0.1s;
+    transform: translate(0);
+}

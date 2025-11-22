@@ -1,0 +1,40 @@
+
+
+<div class="container__movies__search">
+    <div class="form__movie" autofocus>
+        <app-input-search (queryChange)="searchMovies($event)"></app-input-search>
+    </div>
+
+    <!-- ▶ State: Esperando búsqueda -->
+    @if (state === 'idle') {
+        <div class="state-box">
+            <p class="msg">Search for a movie...</p>
+        </div>
+    }
+
+    <!-- ▶ State: Loading -->
+    @if (state === 'loading') {
+        <div class="state-box">
+            <div class="spinner"></div>
+            <p class="msg">Searching movies...</p>
+        </div>
+    }
+
+    <!-- ▶ State: No results -->
+    @if (state === 'empty') {
+        <div class="state-box">
+            <p class="msg">No movies found.</p>
+        </div>
+    }
+
+    @if (state === 'success') {
+        <div class="content__movies__search">
+            @for (movie of movies; track movie.id) {
+                <app-card-movie [moviesCatalog]="movie"></app-card-movie>
+            }
+        </div>
+    }
+
+</div>
+
+

@@ -1,0 +1,20 @@
+<div class="search-wrapper">
+    <span class="material-icons icon">search</span>
+
+    <input
+        type="text"
+        [(ngModel)]="querySearch"
+        (keyup.enter)="onEnter()"
+        placeholder="Buscar..."
+    />
+
+    @if (querySearch) {
+        <span
+            class="material-icons clear"
+            (click)="clearSearch()"
+        >
+            close
+        </span>
+    }
+
+</div>

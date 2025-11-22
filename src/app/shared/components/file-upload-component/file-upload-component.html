@@ -1,0 +1,61 @@
+<div class="upload-list">
+    <div class="file-card">
+        <div class="file-left">
+            <div class="meta">
+                <div class="filename">{{movie.title}}</div>
+                <!--
+                    <div class="filesub">
+                        <span class="size">Zise</span>
+                        <span class="dot">•</span>
+                        <span class="type">Ext</span>
+                    </div>
+                    -->
+            </div>
+        </div>
+
+        <div class="file-right">
+            <!-- estado: uploading -->
+            @if (state === 'uploading') {
+                <div class="state uploading">
+                    <div class="percent">{{movie.title}}</div>
+                    <button class="btn-cancel" title="Cancel">
+                        <svg width="16" height="16" viewBox="0 0 24 24">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                  stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="progress-wrap">
+                        <!-- From Uiverse.io by PriyanshuGupta28 -->
+                        <div class="spinner">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                        </div>
+                    </div>
+                </div>
+            } @else if (state === 'complete') {
+                <div class="state complete">
+                    <div class="complete-indicator">
+                        <svg class="check" viewBox="0 0 24 24">
+                            <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                  stroke-linejoin="round" fill="none"/>
+                        </svg>
+                        <span class="text">Complete</span>
+                    </div>
+                </div>
+            } @else {
+                <div class="state error">
+                    <span class="err">Cancelled</span>
+                    <button class="btn-retry">Retry</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,5 @@
+
+@for (movie of movies; track movie.id) {
+    <app-card-movie (click)="selectMovie(movie)" [moviesCatalog]="movie"></app-card-movie>
+}
+

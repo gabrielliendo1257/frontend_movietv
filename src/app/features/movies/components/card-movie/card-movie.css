@@ -1,0 +1,124 @@
+:host {
+    display: flex;
+    flex-direction: column;
+}
+
+.card__movie__container {
+    width: var(--card-size-xs);
+    background: #0d1117;
+    height: 376px;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.35);
+    transition: transform .25s ease, box-shadow .25s ease;
+    cursor: pointer;
+    overflow: hidden;
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 18px rgba(0,0,0,.45);
+
+        .footer__card__movie {
+            background-color: #22c55e;
+        }
+    }
+}
+
+.bodi__card {
+    width: 100%;
+    padding: var(--space-xs);
+}
+
+.icon__thumb {
+    font-size: 1.1rem;
+    opacity: .6;
+}
+
+.title_movie {
+    margin-top: var(--space-sm);
+    white-space: nowrap;      /* Evita que el texto haga salto de línea */
+    overflow: hidden;         /* Oculta lo que se sale del contenedor */
+    text-overflow: ellipsis;  /* Muestra "..." cuando se corta */
+    font-size: 0.95rem;
+    line-height: 1.3;
+    letter-spacing: 0.7px;
+}
+
+.image__container {
+    width: 100%;
+    height: 280px;
+}
+
+img {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+}
+
+.movie__rating {
+    font-size: var(--font-base);
+    font-weight: 400;
+}
+
+.punctuations__container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.footer__card__movie {
+    margin-top: var(--space-sm);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #7c7fff;
+    font-weight: lighter;
+    border-radius: 0 0 14px 14px;
+    font-size: 0.92rem;
+}
+
+.thumbs {
+    margin-top: var(--space-xs);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.thumb__down {
+    margin-left: 8px;
+}
+
+.stars__movie {
+    margin-right: var(--space-xs);
+    color: #efb810;
+}
+
+.punctuations__container .movie__rating,
+.punctuations__container .thumbs
+.punctuations__container .footer__card__movie {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@media screen and (min-width: 345px) {
+    .card__movie__container {
+        width: var(--card-size-sm);
+    }
+}
+
+@media screen and (min-width: 760px) {
+    .card__movie__container {
+        width: var(--card-size-md);
+        height: 385px;
+    }
+
+    .bodi__card {
+        padding: var(--space-sm);
+    }
+}
+
+@media screen and (min-width: 1024px) {
+    .card__movie__container {
+        width: var(--card-size-lg);
+        height: 385px;
+    }
+}
