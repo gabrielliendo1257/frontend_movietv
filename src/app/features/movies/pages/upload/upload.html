@@ -65,36 +65,14 @@
             <section class="container__mini__card__inf" [ngClass]="{ 'disable': !isHidden }">
                 <app-input-search (queryChange)="searchMovies($event)"></app-input-search>
 
-                <!-- ▶ State: Esperando búsqueda -->
-                @if (state === 'idle') {
-                    <div class="state-box">
-                        <p class="msg">Search for a movie...</p>
-                    </div>
-                }
-
-                <!-- ▶ State: Loading -->
-                @if (state === 'loading') {
-                    <div class="state-box">
-                        <div class="spinner"></div>
-                        <p class="msg">Searching movies...</p>
-                    </div>
-                }
-
-                <!-- ▶ State: No results -->
-                @if (state === 'empty') {
-                    <div class="state-box">
-                        <p class="msg">No movies found.</p>
-                    </div>
-                }
-
-                @if (state === 'success' && !movieSelected) {
-                    <div class="content__movies__search">
+                <app-circle-loader #loader>
+                    <div class="content__movies">
                         @for (movie of movies; track movie.id) {
                             <app-mini-card-movie (click)="currentMovie(movie)"
                                                  [moviesCatalog]="movie"></app-mini-card-movie>
                         }
                     </div>
-                }
+                </app-circle-loader>
             </section>
         </main>
     </div>

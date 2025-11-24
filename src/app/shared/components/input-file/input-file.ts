@@ -27,6 +27,7 @@ export class InputFile {
 
         if (fileResult !== undefined) {
             this.file = fileResult;
+            console.log("Emmitted file: ", this.file);
             this.filenameEmit.emit(this.file);
         }
     }
@@ -47,11 +48,14 @@ export class InputFile {
 
         if (event.dataTransfer?.files.length) {
             let file: File = event.dataTransfer.files[0];
+            console.log("File Dropped: ", file);
 
             let fileResult = this.validationFile(file)
+            console.log("File result: ", fileResult);
 
             if (fileResult !== undefined) {
                 this.file = fileResult;
+                this.filenameEmit.emit(this.file);
             }
         }
     }

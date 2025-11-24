@@ -1,14 +1,14 @@
-import {CanActivateFn} from '@angular/router';
-import {inject} from '@angular/core';
+import { CanActivateFn } from '@angular/router';
 import {AuthService} from '@core/services/auth.service';
+import {inject} from '@angular/core';
 
-export const authGuard: CanActivateFn = async (route, state) => {
+export const adminGuard: CanActivateFn = async (route, state) => {
     const auth: AuthService = inject(AuthService);
-    const isLogged = await auth.checkSession();
+    const isLogged = await auth.isAdmin();
     console.log("Is logged: ", isLogged)
 
     if (isLogged) {
-        console.log("Yes Authenticated!.");
+        console.log("Yes Administrator.");
         return true;
     } else {
         console.log("Starting flow authentication.")

@@ -1,5 +1,13 @@
-<app-main-layout>
-    <app-navbar />
-    <router-outlet />
-    <app-footer />
-</app-main-layout>
+@if (isAuth && isAdmin) {
+    <app-admin-layout>
+        <router-outlet></router-outlet>
+    </app-admin-layout>
+} @else if (isAuth && !isAdmin) {
+    <app-auth-layout>
+        <router-outlet></router-outlet>
+    </app-auth-layout>
+} @else {
+    <app-public-layout>
+        <router-outlet />
+    </app-public-layout>
+}

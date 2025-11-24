@@ -16,9 +16,12 @@ export class AuthCallback {
         if (code) {
             this.auth.handleCallback(code)
                 .then((ok) => {
-                    const redirectTo = localStorage.getItem('redirect_to') || '/home';
+                    let redirectTo = localStorage.getItem('redirect_to') || '/home';
+                    if (!redirectTo) {
+                        redirectTo = '/home';
+                    }
                     console.log("Redirect to: ", redirectTo);
-                    this.router.navigate([redirectTo]).then(() => {
+                    this.router.navigate([redirectTo]).then((data) => {
                         console.log("Success redirect.");
                     })
                 })

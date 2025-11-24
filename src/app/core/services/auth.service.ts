@@ -1,5 +1,5 @@
 import {Injectable, signal} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpResponse} from '@angular/common/http';
 import {lastValueFrom} from 'rxjs';
 
 @Injectable({
@@ -23,7 +23,7 @@ export class AuthService {
 
     async handleCallback(code: string) {
         const result = await lastValueFrom(
-            this.httpClient.post('http://192.168.1.103:8080/api/v1/movie/auth/exchange', {
+            this.httpClient.post<{ok: boolean}>('http://192.168.1.103:8080/api/v1/movie/auth/exchange', {
                 'code': code,
             }, {
                 withCredentials: true,

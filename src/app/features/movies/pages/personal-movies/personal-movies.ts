@@ -1,7 +1,7 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, inject, OnInit, ViewChild} from '@angular/core';
 import MovieService from '@features/movies/services/movie-service';
 import {CardMovie} from '@features/movies/components/card-movie/card-movie';
-import {RequestMedia, SignatureData} from '@features/movies/models/movie-models';
+import {RequestMedia} from '@features/movies/models/movie-models';
 
 @Component({
     selector: 'app-personal-movies',

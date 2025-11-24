@@ -1,7 +1,7 @@
 import {Routes} from '@angular/router';
 import {MovieList} from '@features/movies/pages/movie-list/movie-list';
 import {Upload} from '@features/movies/pages/upload/upload';
-import {authGuard} from '@core/guards/auth-guard';
+import {adminGuard} from '@core/guards/admin-guard';
 
 export const routes: Routes = [
     {
@@ -10,7 +10,7 @@ export const routes: Routes = [
     },
     {
         path: 'upload',
-        canMatch: [authGuard],
+        canMatch: [adminGuard],
         component: Upload
     }
 ];

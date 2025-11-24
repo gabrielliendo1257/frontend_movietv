@@ -8,6 +8,8 @@ import {Movie} from '@features/movies/models/movie-models';
 import {NgClass} from '@angular/common';
 import {FileUploadComponent, UploadState} from '@shared/components/file-upload-component/file-upload-component';
 import {MatIconModule} from '@angular/material/icon';
+import {CircleLoader} from '@shared/components/loaders/circle-loader/circle-loader';
+import {Pagination} from '@shared/models/response-api';
 
 @Component({
     selector: 'app-upload',
@@ -19,13 +21,13 @@ import {MatIconModule} from '@angular/material/icon';
         NgClass,
         FileUploadComponent,
         MatIconModule,
+        CircleLoader,
     ],
     templateUrl: './upload.html',
     styleUrl: './upload.css',
 })
 export class Upload {
     movieService = inject(MovieService)
-    state: 'idle' | 'loading' | 'success' | 'empty' = 'idle';
     uploadingState!: UploadState;
     movies: Movie[] | undefined;
     movieSelected: Movie | undefined;
@@ -34,6 +36,10 @@ export class Upload {
     file: File | null = null;
 
     @ViewChild('upload') uploadRef!: InputFile
+    @ViewChild('loader') loaderRef!: CircleLoader<{ data: Pagination<Movie>, error: boolean } | {
+        data: null;
+        error: boolean;
+    }>
 
     upload() {
         // placeholder: in a real app you'd open a file picker or trigger a service
@@ -41,31 +47,27 @@ export class Upload {
     }
 
     searchMovies(textQuery: string) {
-        this.state = 'loading';
-        this.movieService.searchMovie(textQuery)
-            .then((data) => {
-                if (data.error) {
-                    console.log("Error, empty data.");
-                    this.state = 'empty'
-                } else {
-                    this.state = 'success'
-                    this.movies = data.data?.results
+        this.loaderRef.initLoader(textQuery, async () => {
+            return this.movieService.searchMovie(textQuery);
+        })
+            .then(result => {
+                if (result) {
+                    this.movies = result.data?.results;
                 }
             })
-            .catch(() => {
-                console.log("Bad request.");
-                this.state = 'empty';
+            .catch(err => {
+                console.log(err);
             })
     }
 
     currentMovie(movie: Movie) {
         this.isHidden = !this.isHidden
         this.movieSelected = movie
+        console.log("Current movie: ", movie);
     }
 
     cancelButton() {
         this.isHidden = !this.isHidden
-        this.state = 'idle'
     }
 
     currentFile(file: File) {

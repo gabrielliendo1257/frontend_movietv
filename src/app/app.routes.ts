@@ -1,7 +1,8 @@
 import {Routes} from '@angular/router';
-import {MainLayout} from '@core/layouts/main-layout/main-layout';
 import {AuthCallback} from '@shared/components/auth-callback/auth-callback';
 import {PersonalMovies} from '@features/movies/pages/personal-movies/personal-movies';
+import {MovieDetail} from '@features/movies/pages/movie-detail/movie-detail';
+import {authGuard} from '@core/guards/auth-guard';
 
 export const routes: Routes = [
     {
@@ -19,6 +20,11 @@ export const routes: Routes = [
             {
                 path: 'movies',
                 component: PersonalMovies
+            },
+            {
+                path: 'movies/:id',
+                component: MovieDetail,
+                canMatch: [authGuard]
             },
             {
                 path: 'home',

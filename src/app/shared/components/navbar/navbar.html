@@ -13,10 +13,8 @@
     <!-- 🔥 Menu Desktop + Mobile -->
     <ul class="nav-menu" [class.open]="mobileOpen">
 
-        <li class="nav-item"><a routerLink="/home">VIDEO</a></li>
-        <li class="nav-item"><a>FILMS</a></li>
-        <li class="nav-item"><a>SERIES</a></li>
-        <li class="nav-item"><a routerLink="/movies">MOVIES</a></li>
+        <li class="nav-item"><a routerLink="/home">HOME</a></li>
+        <li class="nav-item"><a routerLink="/movies">UPLOADS</a></li>
 
         <!-- Dropdown -->
         <li class="nav-item dropdown"
@@ -33,6 +31,8 @@
                 <a class="dropdown-link">VR + INTERACTIVE</a>
             </div>
         </li>
+
+        <ng-content></ng-content>
 
     </ul>
 

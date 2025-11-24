@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {RouterLink} from '@angular/router';
+import {AuthService} from '@core/services/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -13,6 +14,7 @@ export class Navbar {
 
     isOpen = false;
     mobileOpen = false;
+    authService: AuthService = inject(AuthService);
 
     openDropdown() {
         if (window.innerWidth > 900) this.isOpen = true;
@@ -34,4 +36,11 @@ export class Navbar {
         // Cierra dropdown si el menú se cierra
         if (!this.mobileOpen) this.isOpen = false;
     }
+
+    initFlowAuth(currentPath: string) {
+        console.log("Current path: " + currentPath);
+        this.authService.startLoginFlow()
+    }
+
+    protected readonly window = window;
 }
