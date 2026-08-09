@@ -4,53 +4,51 @@ import {lastValueFrom} from 'rxjs';
 import {ResponsePresignedUrl} from '@core/models/s3';
 import {Movie, RequestMedia, SignatureData} from '@features/movies/models/movie-models';
 import {Pagination} from '@shared/models/response-api';
+import {environment} from '../../../../environments/environment';
+import {MovieMetadata} from '@features/uploads/components/upload-panel/movie-data';
 
 @Injectable({
     providedIn: 'root',
 })
 class MovieService {
 
-    readonly externalApiToken: String = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1MzBjNDA4ZjQ0MmY2N2MwM2I4ODliNThmNGEwYzUzMCIsIm5iZiI6MTc2Mjk4OTgwMi4zNTEsInN1YiI6IjY5MTUxNmVhYTMzNDQ5YzA2NjljNGRlMyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.qLE518W4bDDVaMRYMp93S-Al9Yu1Pe48DT0ABf8Xsug'
+    private readonly externalApiToken: String = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1MzBjNDA4ZjQ0MmY2N2MwM2I4ODliNThmNGEwYzUzMCIsIm5iZiI6MTc2Mjk4OTgwMi4zNTEsInN1YiI6IjY5MTUxNmVhYTMzNDQ5YzA2NjljNGRlMyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.qLE518W4bDDVaMRYMp93S-Al9Yu1Pe48DT0ABf8Xsug'
 
     constructor(private httpClient: HttpClient) {
     }
 
     // Todo External api
-    async searchMovie(query: string) {
-        try {
-            const data = await lastValueFrom(
-                this.httpClient.get<Pagination<Movie>>('https://api.themoviedb.org/3/search/movie', {
-                    responseType: 'json',
-                    headers: {
-                        'Authorization': 'Bearer ' + this.externalApiToken,
-                        'Accept': 'application/json'
-                    },
-                    params: {
-                        'include_adult': false,
-                        'language': 'es-ES',
-                        'page': 1,
-                        'query': query
-                    }
-                })
-            )
+    searchMovie(query: string) {
+        return this.httpClient.get<Pagination<MovieMetadata>>('https://api.themoviedb.org/3/search/movie', {
+            responseType: 'json',
+            headers: {
+                'Authorization': 'Bearer ' + this.externalApiToken,
+                'Accept': 'application/json'
+            },
+            params: {
+                'include_adult': false,
+                'language': 'es-ES',
+                'page': 1,
+                'query': query
+            }
+        })
+    }
 
-            return {
-                data: data,
-                error: false
+    findMovieDetails(movieId: number) {
+        return this.httpClient.get<Pagination<MovieMetadata>>(`https://api.themoviedb.org/3/movie/${movieId}`, {
+            responseType: 'json',
+            headers: {
+                'Authorization': 'Bearer ' + this.externalApiToken,
+                'accept': 'application/json'
             }
-        } catch {
-            return {
-                data: null,
-                error: true
-            }
-        }
+        })
     }
 
     // Todo Servidor: backend propio
     async uploadSession(file: String) {
         try {
             const data = await lastValueFrom(
-                this.httpClient.post<ResponsePresignedUrl>('http://192.168.1.103:8080/api/v1/movie/upload-session', {
+                this.httpClient.post<ResponsePresignedUrl>(environment.backendAddress + '/api/v1/movie/upload-session', {
                     'filename': file
                 }, {
                     withCredentials: true,
@@ -77,7 +75,7 @@ class MovieService {
     async saveMovie(movie: Movie, objectKey: string) {
         try {
             const data = await lastValueFrom(
-                this.httpClient.post('http://192.168.1.103:8080/api/v1/movie/save',
+                this.httpClient.post(environment.backendAddress + '/api/v1/movie/save',
                     {
                         'file': {
                             'filename': objectKey,
@@ -130,7 +128,7 @@ class MovieService {
     async getAllMedia() {
         try {
             const data = await lastValueFrom(
-                this.httpClient.get<RequestMedia[]>('http://192.168.1.103:8080/api/v1/movie/all', {
+                this.httpClient.get<RequestMedia[]>(environment.backendAddress + '/api/v1/movie/all', {
                     withCredentials: true,
                     responseType: 'json',
                     headers: {
@@ -155,7 +153,7 @@ class MovieService {
     async sessionStreaming(objectKey: string) {
         try {
             const data = await lastValueFrom(
-                this.httpClient.post<SignatureData>('http://192.168.1.103:8080/api/v1/movie/streaming-session', {
+                this.httpClient.post<SignatureData>(environment.backendAddress + '/api/v1/movie/streaming-session', {
                     filename: objectKey
                 }, {
                     withCredentials: true,
