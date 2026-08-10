@@ -30,5 +30,10 @@ export const routes: Routes = [
                 loadChildren: () => import('./features/uploads/routes').then(m => m.UPLOAD_ROUTES),
             }
         ]
+    },
+    {
+        path: 'watch/:id',
+        loadComponent: () =>
+            import('./features/movies/pages/watch-page/watch-page').then(m => m.WatchPage),
     }
 ];

@@ -1,4 +1,4 @@
-<div class="featured-card" [style.background-image]="'url(' + backdropUrl() + ')'">
+<div class="featured-card" [style.background-image]="'url(' + backdropUrl() + ')'" (click)="onCardClick()">
     <div class="featured-scrim"></div>
     <div class="featured-info">
         <h3 class="featured-title">{{ title() }}</h3>

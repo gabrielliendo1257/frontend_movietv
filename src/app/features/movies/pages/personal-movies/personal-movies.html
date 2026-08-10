@@ -54,6 +54,7 @@
                         [rating]="movie.vote_average"
                         [year]="movie.release_date.slice(0, 4)"
                         [genre]="heroGenres(movie.genre_ids) || null"
+                        [link]="'/watch/' + movie.id"
                     ></app-card-movie-ui>
                 }
             </div>
@@ -71,6 +72,7 @@
                         [rating]="movie.vote_average"
                         [year]="movie.release_date.slice(0, 4)"
                         [genre]="heroGenres(movie.genre_ids) || null"
+                        [link]="'/watch/' + movie.id"
                     ></app-card-movie-ui>
                 }
             </div>
@@ -87,6 +89,7 @@
                         [backdropUrl]="movie.backdrop_path ?? ''"
                         [overview]="movie.overview"
                         [meta]="movie.release_date.slice(0, 4) + (heroGenres(movie.genre_ids) ? ' · ' + heroGenres(movie.genre_ids) : '')"
+                        [link]="'/watch/' + movie.id"
                     ></app-featured-movie-card>
                 }
             </div>
@@ -100,6 +103,7 @@
                 [posterUrl]="'https://image.tmdb.org/t/p/w500'+movie.poster_path"
                 [rating]="movie.vote_average"
                 [year]="movie.release_date?.slice(0, 4)"
+                [link]="'/watch/' + movie.id"
             ></app-card-movie-ui>
         }
     </div>

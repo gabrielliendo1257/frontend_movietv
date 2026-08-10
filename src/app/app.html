@@ -1,3 +1,7 @@
-<app-public-layout>
+@if (isWatchRoute()) {
     <router-outlet />
-</app-public-layout>
+} @else {
+    <app-public-layout>
+        <router-outlet />
+    </app-public-layout>
+}
