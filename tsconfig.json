@@ -15,7 +15,6 @@
         "target": "ES2022",
         "paths": {
             "@core/*": ["./src/app/core/*"],
-            "@shared/*": ["./src/app/shared/*"],
             "@features/*": ["./src/app/features/*"]
         },
         "module": "preserve"

@@ -1,0 +1,15 @@
+<div class="upload-page">
+
+    <app-movie-metadata-form
+        [movieData]="selectedMovie()"
+        (emittedFileSelected)="receiverSelectedFile.set($event)"
+        (openSearch)="movieModalIsOpen.set(true)"
+        (uploadRequested)="startUpload()"
+    />
+
+    <app-movie-search-modal
+        [(isOpen)]="movieModalIsOpen"
+        (movieSelected)="onMovieSelected($event)"
+    />
+
+</div>

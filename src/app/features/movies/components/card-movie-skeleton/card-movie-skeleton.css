@@ -1,0 +1,67 @@
+.skeleton-card {
+    width: 200px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #141418;
+    border: 1px solid #1e1e26;
+}
+
+.skeleton-poster {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    background: #1a1a20;
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-info {
+    padding: 0.7rem 0.8rem 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.skeleton-line {
+    height: 12px;
+    border-radius: 6px;
+    background: #1a1a20;
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-line.w-80 { width: 80%; }
+.skeleton-line.w-50 { width: 50%; }
+
+.shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        #2a2a32 40%,
+        #3a3a44 50%,
+        #2a2a32 60%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@media (max-width: 480px) {
+    .skeleton-card {
+        width: 160px;
+    }
+
+    .skeleton-info {
+        padding: 0.55rem 0.65rem 0.65rem;
+    }
+
+    .skeleton-line {
+        height: 10px;
+    }
+}

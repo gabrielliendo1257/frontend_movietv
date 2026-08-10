@@ -1,0 +1,411 @@
+<div class="app-container">
+    <!-- HEADER WITH AUTOCOMPLETE BUTTON -->
+    <div class="header-bar">
+        <div class="header-info">
+            <h1 class="app-title">Movie Metadata</h1>
+            <span class="app-subtitle">Select a video and fill in the movie details</span>
+        </div>
+        <input
+            #fileInput
+            type="file"
+            (change)="onFileSelected($event)"
+            class="file-input-hidden"
+        />
+        <div class="tabs">
+            <button class="autocomplete-btn file-btn" (click)="selectFile()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Select file
+            </button>
+            <button class="autocomplete-btn" (click)="openSearch.emit()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                Autocomplete
+            </button>
+        </div>
+
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+        <button class="tab-btn" [class.active]="activeTab === 'form'" (click)="switchTab('form')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'preview'" (click)="switchTab('preview')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            Preview
+        </button>
+    </div>
+
+    <!-- ============ VIDEO FILE INFO ============ -->
+    @if (fileSelected(); as file) {
+        <div class="video-info-bar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="23 7 16 12 23 17 23 7"/>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+            <div class="video-info-text">
+                <span class="video-info-name">{{ file.name }}</span>
+                <span class="video-info-size">{{ formatFileSize(file.size) }}</span>
+            </div>
+        </div>
+    }
+
+    <!-- ============ FORM TAB ============ -->
+    @if (activeTab === 'form') {
+        <div class="form-grid">
+            <!-- BASIC INFO -->
+            <div class="form-card">
+                <h3 class="card-title">Basic Information</h3>
+
+                <div class="field">
+                    <label class="field-label" for="title">Title *</label>
+                    <input id="title" class="input" type="text"
+                           [ngModel]="m.title"
+                           (ngModelChange)="updateField('title', $event)"
+                           placeholder="e.g. Inception"/>
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="originalTitle">Original Title</label>
+                    <input id="originalTitle" class="input" type="text"
+                           [ngModel]="m.originalTitle"
+                           (ngModelChange)="updateField('originalTitle', $event)"
+                           placeholder="e.g. Origen"/>
+                </div>
+
+                <div class="field-row">
+                    <div class="field flex-1">
+                        <label class="field-label" for="year">Year</label>
+                        <input id="year" class="input" type="number"
+                               [ngModel]="m.year"
+                               (ngModelChange)="updateField('year', $event)"
+                               placeholder="2010" min="1900" max="2099"/>
+                    </div>
+                    <div class="field flex-1">
+                        <label class="field-label" for="duration">Duration</label>
+                        <input id="duration" class="input" type="text"
+                               [ngModel]="m.duration"
+                               (ngModelChange)="updateField('duration', $event)"
+                               placeholder="2h 28m"/>
+                    </div>
+                </div>
+
+                <div class="field-row">
+                    <div class="field flex-1">
+                        <label class="field-label" for="country">Country</label>
+                        <input id="country" class="input" type="text"
+                               [ngModel]="m.country"
+                               (ngModelChange)="updateField('country', $event)"
+                               placeholder="USA"/>
+                    </div>
+                    <div class="field flex-1">
+                        <label class="field-label" for="language">Language</label>
+                        <input id="language" class="input" type="text"
+                               [ngModel]="m.language"
+                               (ngModelChange)="updateField('language', $event)"
+                               placeholder="English"/>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="releaseDate">Release Date</label>
+                    <input id="releaseDate" class="input" type="text"
+                           [ngModel]="m.release_date"
+                           (ngModelChange)="updateField('release_date', $event)"
+                           placeholder="July 16, 2010"/>
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="director">Director</label>
+                    <input id="director" class="input" type="text"
+                           [ngModel]="m.director"
+                           (ngModelChange)="updateField('director', $event)"
+                           placeholder="Christopher Nolan"/>
+                </div>
+            </div>
+
+            <!-- RATING & POSTER -->
+            <div class="form-card">
+                <h3 class="card-title">Rating & Poster</h3>
+
+                <div class="field">
+                    <label class="field-label">Rating ({{ m.popularity }}/10)</label>
+                    <div class="star-rating">
+                        @for (star of ratingStars; track star) {
+                            <span class="star-btn" [class.filled]="star <= m.popularity"
+                                  (click)="setRating($event)">★</span>
+                        }
+                    </div>
+                    <input type="range" min="1" max="10" step="0.5"
+                           [value]="m.popularity"
+                           (input)="setRating($event)"
+                           class="rating-slider"/>
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="posterUrl">Poster URL</label>
+                    <input id="posterUrl" class="input" type="url"
+                           [ngModel]="m.poster_path"
+                           (ngModelChange)="updateField('poster_path', $event)"
+                           placeholder="https://..."/>
+                    @if (m.poster_path) {
+                        <div class="poster-preview">
+                            <img [src]="''+m.poster_path" alt="poster preview" (error)="updateField('poster_path', '')"/>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- GENRES -->
+            <div class="form-card">
+                <h3 class="card-title">Genres</h3>
+                <div class="chip-input-group">
+                    <input class="input" type="text"
+                           [(ngModel)]="genreInput"
+                           (keydown.enter)="$event.preventDefault(); addGenre()"
+                           placeholder="Type and press Enter"/>
+                    <button class="btn btn-sm" (click)="addGenre()">+ Add</button>
+                </div>
+                @if (m.genres.length) {
+                    <div class="chip-list">
+
+                        @for (g of m.genres; track g; let i = $index) {
+                            <span class="chip">
+                                {{ g }}
+                                <button class="chip-remove" (click)="removeGenre(i)">✕</button>
+                            </span>
+                        }
+
+                    </div>
+                } @else {
+                    <p class="empty-hint">No genres added yet.</p>
+                }
+            </div>
+
+            <!-- CAST -->
+            <div class="form-card">
+                <h3 class="card-title">Cast</h3>
+                <div class="chip-input-group">
+                    <input class="input" type="text"
+                           [(ngModel)]="castInput"
+                           (keydown.enter)="$event.preventDefault(); addCast()"
+                           placeholder="Actor name"/>
+                    <button class="btn btn-sm" (click)="addCast()">+ Add</button>
+                </div>
+                @if (m.cast.length) {
+                    <div class="chip-list">
+                        @for (actor of m.cast; track actor; let i = $index) {
+                            <span class="chip">
+                                {{ actor }}
+                                <button class="chip-remove" (click)="removeCast(i)">✕</button>
+                            </span>
+                        }
+                    </div>
+                } @else {
+                    <p class="empty-hint">No cast added yet.</p>
+                }
+            </div>
+
+            <!-- SYNOPSIS -->
+            <div class="form-card full-width">
+                <h3 class="card-title">Synopsis</h3>
+                <textarea class="textarea"
+                          [ngModel]="m.overview"
+                          (ngModelChange)="updateField('overview', $event)"
+                          placeholder="Write a brief synopsis of the movie..."
+                          rows="5"></textarea>
+            </div>
+
+            <!-- AWARDS -->
+            <div class="form-card full-width">
+                <h3 class="card-title">Awards</h3>
+                <div class="chip-input-group">
+                    <input class="input" type="text"
+                           [(ngModel)]="awardInput"
+                           (keydown.enter)="$event.preventDefault(); addAward()"
+                           placeholder="Award name"/>
+                    <button class="btn btn-sm" (click)="addAward()">+ Add</button>
+                </div>
+                @if (m.awards.length) {
+                    <div class="chip-list">
+                        @for (award of m.awards; track award; let i = $index) {
+                            <span class="chip">
+                                {{ award }}
+                                <button class="chip-remove" (click)="removeAward(i)">✕</button>
+                            </span>
+                        }
+                    </div>
+                } @else {
+                    <p class="empty-hint">No awards added yet.</p>
+                }
+            </div>
+
+            <!-- UPLOADER -->
+            <div class="form-card full-width">
+                @if (isUploading()) {
+
+                    <div class="progress-wrapper">
+                        <div class="progress-header">
+                            <span>{{ uploadState() }}</span>
+                            <span>{{ progress() }}%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div
+                                class="progress-bar"
+                                [style.width.%]="progress()">
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (error()) {
+                    <div class="error-box">
+                        {{ error() }}
+                    </div>
+                }
+
+                <button class="btn" type="submit" (click)="startUpload()">Upload</button>
+            </div>
+        </div>
+    }
+
+    <!-- ============ PREVIEW TAB ============ -->
+    @if (activeTab === 'preview') {
+        <div class="movie-card" [class.empty]="!m.title && !m.overview && !m.cast.length && !m.genres.length">
+            <div class="poster-section">
+                @if (m.poster_path) {
+                    <img [src]="m.poster_path" [alt]="m.title" class="poster"/>
+                } @else {
+                    <div class="poster-placeholder">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                        <span>No poster</span>
+                    </div>
+                }
+            </div>
+
+            <div class="info-section">
+                <div class="header">
+                    <h1 class="title">{{ m.title || 'Untitled' }}</h1>
+                    @if (m.year) {
+                        <span class="year">{{ m.year }}</span>
+                    }
+                </div>
+
+                @if (m.originalTitle) {
+                    <div class="meta-row">
+                        <span class="original-title">{{ m.originalTitle }}</span>
+                    </div>
+                }
+
+                @if (m.genres.length || m.country || m.language) {
+                    <div class="badge-row">
+                        @for (genre of m.genres; track genre) {
+                            <span class="badge genre">{{ genre }}</span>
+                        }
+                        @if (m.country) {
+                            <span class="badge badge-outline">{{ m.country }}</span>
+                        }
+                        @if (m.language) {
+                            <span class="badge badge-outline">{{ m.language }}</span>
+                        }
+                    </div>
+                }
+
+                @if (m.popularity || m.duration) {
+                    <div class="rating-duration">
+                        <div class="stars">
+                            @for (star of ratingStars; track star) {
+                                <span class="star" [class.filled]="star <= roundRating(m.popularity)">★</span>
+                            }
+                            <span class="rating-value">{{ m.popularity }}/10</span>
+                        </div>
+                        @if (m.duration) {
+                            <span class="duration">{{ m.duration }}</span>
+                        }
+                    </div>
+                }
+
+                @if (m.director || m.release_date) {
+                    <div class="detail-grid">
+                        @if (m.director) {
+                            <div class="detail-item">
+                                <span class="label">Director</span>
+                                <span class="value">{{ m.director }}</span>
+                            </div>
+                        }
+                        @if (m.release_date) {
+                            <div class="detail-item">
+                                <span class="label">Release</span>
+                                <span class="value">{{ m.release_date }}</span>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (m.cast.length) {
+                    <div class="cast-section">
+                        <span class="label">Cast</span>
+                        <div class="cast-list">
+                            @for (actor of m.cast; track actor) {
+                                <span class="cast-chip">{{ actor }}</span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (m.overview) {
+                    <div class="synopsis-section">
+                        <span class="label">Synopsis</span>
+                        <p class="synopsis">{{ m.overview }}</p>
+                    </div>
+                }
+
+                @if (m.awards.length) {
+                    <div class="awards-section">
+                        <span class="label">Awards</span>
+                        <ul class="awards-list">
+                            @for (award of m.awards; track award) {
+                                <li>{{ award }}</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                @if (!m.title && !m.overview && !m.cast.length && !m.genres.length) {
+                    <div class="empty-preview">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="16"/>
+                            <line x1="8" y1="12" x2="16" y2="12"/>
+                        </svg>
+                        <p>Add movie metadata to see the preview.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>

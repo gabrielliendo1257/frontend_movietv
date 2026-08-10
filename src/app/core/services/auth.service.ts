@@ -1,77 +1,55 @@
-import {Injectable, signal} from '@angular/core';
-import {HttpClient, HttpResponse} from '@angular/common/http';
-import {lastValueFrom} from 'rxjs';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { SessionResponse } from '@core/models/SessionResponse';
+
+export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
 @Injectable({
     providedIn: 'root',
 })
 export class AuthService {
+    private readonly http = inject(HttpClient);
+    private readonly baseUrl = environment.backendAddress;
 
-    _isLogged = signal(false);
+    private readonly _status = signal<AuthStatus>('loading');
 
-    constructor(private httpClient: HttpClient) {
+    readonly status = this._status.asReadonly();
+    readonly isLogged = computed(() => this._status() === 'authenticated');
+
+    constructor() {
+        this.checkSession();
     }
 
-    startLoginFlow() {
-        window.location.href =
-            `http://192.168.1.103:8080/oauth2/authorize` +
-            `?response_type=code` +
-            `&client_id=app-movie` +
-            `&redirect_uri=http://192.168.1.103:4200/callback` +
-            `&scope=profile`;
-    }
-
-    async handleCallback(code: string) {
-        const result = await lastValueFrom(
-            this.httpClient.post<{ok: boolean}>('http://192.168.1.103:8080/api/v1/movie/auth/exchange', {
-                'code': code,
-            }, {
+    checkSession(): void {
+        this._status.set('loading');
+        this.http
+            .get<SessionResponse>(`${this.baseUrl}/web/session`, {
                 withCredentials: true,
-                headers: {
-                    'Content-Type': 'application/json',
-                }
             })
-        );
-        console.log("Result: ", result);
-        return result;
+            .subscribe({
+                next: (session) => {
+                    this._status.set(session.authenticated ? 'authenticated' : 'unauthenticated');
+                },
+                error: () => {
+                    this._status.set('unauthenticated');
+                },
+            });
     }
 
-    async checkSession(): Promise<boolean> {
-        try {
-            await lastValueFrom(
-                this.httpClient.get('http://192.168.1.103:8080/api/v1/movie/auth/me', {
-                    withCredentials: true, headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
-            );
-            console.log("Account autenticado.");
-            this._isLogged.set(true);
-            return true;
-        } catch {
-            console.log("No autenticado.");
-            this._isLogged.set(false);
-            return false;
-        }
+    startLoginFlow(): void {
+        window.location.href = `${this.baseUrl}/oauth2/authorization/movie-app`;
     }
 
-    async isAdmin() {
-        try {
-            const result = await lastValueFrom(
-                this.httpClient.get('http://192.168.1.103:8080/api/v1/movie/auth/admin', {
-                    withCredentials: true,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
-            );
-            console.log("Account is admin: ", result);
-            this._isLogged.set(true);
-            return true;
-        } catch {
-            console.log("Not admin.");
-            this._isLogged.set(false);
-            return false;
-        }
+    logout(): void {
+        this.http.post(`${this.baseUrl}/web/logout`, null, { withCredentials: true }).subscribe({
+            next: () => {
+                this._status.set('unauthenticated');
+                window.location.href = '/';
+            },
+            error: () => {
+                window.location.href = '/';
+            },
+        });
     }
 }

@@ -1,0 +1,46 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpEvent } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { UploadRequest } from '@features/uploads/models/upload-request';
+import { UploadSessionDto } from '@features/uploads/models/upload-response';
+import { environment } from '../../../../environments/environment';
+
+@Injectable({
+    providedIn: 'root',
+})
+export class UploadApiService {
+    private readonly http = inject(HttpClient);
+    private readonly uploadsUrl = environment.backendAddress + '/web/uploads';
+
+    getCredentials(file: File): Observable<UploadSessionDto> {
+        const request: UploadRequest = {
+            filename: file.name,
+            mime_type: file.type,
+            file_size: file.size,
+        };
+
+        return this.http.post<UploadSessionDto>(this.uploadsUrl, request, {
+            headers: {
+                'Content-Type': 'application/json',
+                accept: 'application/json',
+            },
+            withCredentials: true,
+        });
+    }
+
+    uploadToStorage(file: File, session: UploadSessionDto): Observable<HttpEvent<unknown>> {
+        return this.http.put<unknown>(session.uploadUrl, file, {
+            reportProgress: true,
+            observe: 'events',
+            headers: {
+                'Content-Type': session.object.expectedMime,
+            },
+        });
+    }
+
+    confirmUpload(uploadId: string): Observable<unknown> {
+        return this.http.post(`${this.uploadsUrl}/${uploadId}/complete`, null, {
+            withCredentials: true,
+        });
+    }
+}

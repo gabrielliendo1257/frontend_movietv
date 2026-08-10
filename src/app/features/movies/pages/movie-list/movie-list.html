@@ -3,29 +3,27 @@
         <app-input-search (queryChange)="searchMovies($event)"></app-input-search>
     </div>
 
-    @if (_statusSearch() == 'IDLE') {
+    @if (status() == 'IDLE') {
         <h1>Busca una pelicula, por su titulo.</h1>
-    } @else if (_statusSearch() == 'SEARCHING') {
+    } @else if (status() == 'SEARCHING') {
         <div class="content__movies__search">
             @for (_ of [].constructor(6); track $index) {
                 <app-card-movie-skeleton/>
             }
         </div>
-    } @else if (_statusSearch() == 'EMPTY_LIST') {
+    } @else if (status() == 'EMPTY_LIST') {
         <h1>Ninguna coincidencia</h1>
-    } @else if (_statusSearch() == 'ERROR_SEARCH') {
+    } @else if (status() == 'ERROR_SEARCH') {
         <h1>Error en la busqueda</h1>
-    } @else if (_statusSearch() == 'SUCCESS_SEARCH') {
+    } @else if (status() == 'SUCCESS_SEARCH') {
         <div class="content__movies__search">
-            @for (movie of movies(); track movie.title) {
+            @for (movie of movies(); track movie.id) {
                 <app-card-movie-ui
                     [title]="movie.title"
-                    [posterUrl]="'https://image.tmdb.org/t/p/w500'+movie.poster_path"
-                ></app-card-movie-ui>  <!-- TODO Cambiar el poster_path -->
+                    [posterUrl]="movie.poster_path ?? ''"
+                ></app-card-movie-ui>
             }
         </div>
     }
 
 </div>
-
-

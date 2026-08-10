@@ -1,8 +1,15 @@
-
-<app-navbar>
-    <li class="nav-item signin" (click)="startLogin()"><a>SIGN IN</a></li>
-    <li class="nav-item signup"><a>SIGN UP</a></li>
-</app-navbar>
+@if (authService.isLogged()) {
+    <app-navbar-ui
+        [user]="navUser"
+        (searchSubmit)="onSearch($event)"
+        (logoutClick)="logout()"
+    ></app-navbar-ui>
+} @else {
+    <app-navbar-ui
+        (signInClick)="startLogin()"
+        (searchSubmit)="onSearch($event)"
+    ></app-navbar-ui>
+}
 
 <ng-content></ng-content>
 

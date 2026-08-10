@@ -1,0 +1,14 @@
+<div class="card">
+    <div class="poster">
+        <img [src]="posterUrl()" [alt]="title()" loading="lazy" />
+        <div class="overlay">
+            <span class="play-icon">▶</span>
+        </div>
+    </div>
+    <div class="info">
+        <h3 class="title">{{ title() }}</h3>
+        @if (subtitle()) {
+            <span class="subtitle">{{ subtitle() }}</span>
+        }
+    </div>
+</div>

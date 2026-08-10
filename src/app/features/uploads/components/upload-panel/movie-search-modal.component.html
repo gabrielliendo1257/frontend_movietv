@@ -1,0 +1,70 @@
+<div class="modal-backdrop" [class.open]="isOpen()" (click)="onBackdropClick($event)">
+    <div class="modal" [class.open]="isOpen()">
+        <div class="modal-header">
+            <h2 class="modal-title">Search Movie</h2>
+            <button class="modal-close" (click)="close()">✕</button>
+        </div>
+
+        <div class="search-field">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+                class="search-input"
+                type="text"
+                placeholder="Type a movie title..."
+                [ngModel]="query()"
+                (ngModelChange)="onSearchInput($event)"
+                autofocus
+            />
+        </div>
+
+        <div class="modal-body">
+            @if (searching()) {
+                <div class="searching-indicator">
+                    <div class="spinner"></div>
+                    <span>Searching...</span>
+                </div>
+            } @else if (!searching() && query().length >= 2 && !results().length) {
+                <div class="no-results">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <p>No movies found for "<strong>{{ query() }}</strong>"</p>
+                </div>
+            } @else if (!searching() && query().length < 2 && !results().length) {
+                <div class="hint">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="16"/>
+                        <line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                    <p>Type at least 2 characters to search</p>
+                </div>
+            } @else if (results().length) {
+                <div class="results-list">
+                    @for (movie of results(); track movie.title) {
+                        <button
+                            class="result-item"
+                            (click)="selectMovie(movie)"
+                        >
+                            <div class="result-poster">
+                                <img [src]="movie.poster_path" [alt]="movie.title" loading="lazy"/>
+                            </div>
+                            <div class="result-info">
+                                <span class="result-title">{{ movie.title }}</span>
+                                <span class="result-meta">{{ movie.release_date }}</span>
+                                <div class="result-badges">
+                                    <span class="result-rating">{{ movie.popularity }}/10</span>
+                                </div>
+                            </div>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

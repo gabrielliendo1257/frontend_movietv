@@ -1,7 +1,10 @@
 
 <div class="content__movies">
     @for (movie of movies; track movie.id) {
-        <app-card-movie (click)="selectMovie(movie)" [moviesCatalog]="movie"></app-card-movie>
+        <app-card-movie-ui
+            [title]="movie.title"
+            [posterUrl]="'https://image.tmdb.org/t/p/w500'+movie.poster_path"
+        ></app-card-movie-ui>  <!-- TODO Cambiar el poster_path -->
     }
 </div>
 

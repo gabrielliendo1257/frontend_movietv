@@ -1,8 +1,7 @@
 import {Routes} from '@angular/router';
-import {AuthCallback} from '@shared/components/auth-callback/auth-callback';
 import {PersonalMovies} from '@features/movies/pages/personal-movies/personal-movies';
 import {MovieDetail} from '@features/movies/pages/movie-detail/movie-detail';
-import {authGuard} from '@core/guards/auth-guard';
+import { authGuard } from '@core/auth/auth-guard';
 
 export const routes: Routes = [
     {
@@ -12,10 +11,6 @@ export const routes: Routes = [
                 path: '',
                 redirectTo: 'home',
                 pathMatch: 'full'
-            },
-            {
-                path: 'callback',
-                component: AuthCallback
             },
             {
                 path: 'movies',
@@ -31,5 +26,9 @@ export const routes: Routes = [
                 loadChildren: () => import('./features/movies/movies.routes').then(u => u.routes)
             }
         ]
+    },
+    {
+        path: 'uploads',
+        loadChildren: () => import('./features/uploads/routes').then(m => m.UPLOAD_ROUTES),
     }
 ];
