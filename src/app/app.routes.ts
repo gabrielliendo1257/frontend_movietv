@@ -24,11 +24,11 @@ export const routes: Routes = [
             {
                 path: 'home',
                 loadChildren: () => import('./features/movies/movies.routes').then(u => u.routes)
+            },
+            {
+                path: 'uploads',
+                loadChildren: () => import('./features/uploads/routes').then(m => m.UPLOAD_ROUTES),
             }
         ]
-    },
-    {
-        path: 'uploads',
-        loadChildren: () => import('./features/uploads/routes').then(m => m.UPLOAD_ROUTES),
     }
 ];

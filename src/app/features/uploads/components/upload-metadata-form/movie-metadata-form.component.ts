@@ -2,6 +2,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Component, computed, effect, ElementRef, inject, input, signal, viewChild } from '@angular/core';
 import { FormControlStatus, ReactiveFormsModule } from '@angular/forms';
 import { MovieMetadata } from '@features/uploads/models/movie-metadata';
+import { ACTIVE_UPLOAD_STATES } from '@features/uploads/models/upload-task';
 import { UploadFacade } from '@features/uploads/services/upload-facade';
 import { MovieDraftStore } from '@features/uploads/services/movie-draft-store';
 import { MovieSearchModal } from '../movie-search-modal/movie-search-modal';
@@ -26,10 +27,6 @@ export class MovieMetadataFormComponent {
     onUploadSucceeded = input<() => void>();
     onUploadFailed = input<(message: string) => void>();
 
-    readonly progress = this.uploadFacade.progress;
-    readonly error = this.uploadFacade.error;
-    readonly uploadState = this.uploadFacade.state;
-
     readonly form = this.draftStore.form;
     readonly controls = this.draftStore.controls;
 
@@ -38,6 +35,7 @@ export class MovieMetadataFormComponent {
     readonly fileSelected = signal<File | null>(null);
 
     private readonly formStatus = signal<FormControlStatus>('INVALID');
+    private readonly ownTaskId = signal<string | null>(null);
 
     constructor() {
         this.formStatus.set(this.form.status);
@@ -49,29 +47,40 @@ export class MovieMetadataFormComponent {
         this.restoreDraftFile();
 
         effect(() => {
-            if (this.uploadState() === 'completed') {
+            const taskId = this.ownTaskId();
+            if (!taskId) return;
+
+            const task = this.uploadFacade.taskById(taskId);
+
+            if (task?.state === 'completed') {
+                this.ownTaskId.set(null);
                 this.onUploadSucceeded()?.();
                 this.draftStore.reset();
                 this.clearSelectedFile();
-            } else if (this.uploadState() === 'error') {
-                this.onUploadFailed()?.(this.error() ?? 'Upload failed.');
+            } else if (task?.state === 'error') {
+                this.ownTaskId.set(null);
+                this.onUploadFailed()?.(task.error ?? 'Upload failed.');
             }
         });
     }
 
-    readonly isUploading = computed(() => {
-        const state = this.uploadState();
-
-        return (
-            state === 'resuming'
-            || state === 'requesting_session'
-            || state === 'uploading'
-            || state === 'confirming'
-            || state === 'persisting'
-        );
+    readonly ownTask = computed(() => {
+        const taskId = this.ownTaskId();
+        return taskId ? this.uploadFacade.taskById(taskId) : null;
     });
 
-    readonly canUpload = computed(() => !!this.fileSelected() && this.formStatus() === 'VALID');
+    readonly isUploading = computed(() => {
+        const task = this.ownTask();
+        return task ? ACTIVE_UPLOAD_STATES.has(task.state) : false;
+    });
+
+    readonly progress = computed(() => this.ownTask()?.progress ?? 0);
+
+    readonly error = computed(() => this.ownTask()?.error ?? null);
+
+    readonly uploadState = computed(() => this.ownTask()?.state ?? 'idle');
+
+    readonly canUpload = computed(() => !!this.fileSelected() && this.formStatus() === 'VALID' && !this.isUploading());
 
     // UI state
     activeTab: 'form' | 'preview' = 'form';
@@ -125,7 +134,7 @@ export class MovieMetadataFormComponent {
         const file = this.fileSelected();
         if (!file) return;
 
-        this.uploadFacade.uploadMovie(file, this.form.getRawValue());
+        this.ownTaskId.set(this.uploadFacade.startUpload(file, this.form.getRawValue()));
     }
 
     openSearchModal(): void {

@@ -39,6 +39,9 @@ export class NavbarUi {
     profileClick = output<void>();
     settingsClick = output<void>();
     logoutClick = output<void>();
+    uploadClick = output<void>();
+
+    uploadCount = input(0);
 
     menuOpen = signal(false);
     mobileSearchOpen = signal(false);

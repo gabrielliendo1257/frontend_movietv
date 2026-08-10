@@ -1,10 +1,23 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpEvent } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpEventType } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { UploadRequest } from '@features/uploads/models/upload-request';
 import { UploadSessionDto } from '@features/uploads/models/upload-response';
 import { MovieMetadata } from '@features/uploads/models/movie-metadata';
 import { environment } from '../../../../environments/environment';
+
+interface UploadProgressEvent {
+    type: HttpEventType.UploadProgress;
+    loaded: number;
+    total: number | null;
+}
+
+interface UploadResponseEvent {
+    type: HttpEventType.Response;
+    status: number;
+}
+
+export type UploadHttpEvent = HttpEvent<unknown> | UploadProgressEvent | UploadResponseEvent;
 
 @Injectable({
     providedIn: 'root',
@@ -29,13 +42,37 @@ export class UploadApiService {
         });
     }
 
-    uploadToStorage(file: File, session: UploadSessionDto): Observable<HttpEvent<unknown>> {
-        return this.http.put<unknown>(session.uploadUrl, file, {
-            reportProgress: true,
-            observe: 'events',
-            headers: {
-                'Content-Type': session.object.expectedMime,
-            },
+    uploadToStorage(file: File, session: UploadSessionDto, signal?: AbortSignal): Observable<UploadHttpEvent> {
+        return new Observable<UploadHttpEvent>((subscriber) => {
+            let sent = 0;
+
+            const countedStream = file.stream().pipeThrough(
+                new TransformStream<Uint8Array, Uint8Array>({
+                    transform(chunk, controller) {
+                        sent += chunk.byteLength;
+                        subscriber.next({ type: HttpEventType.UploadProgress, loaded: sent, total: file.size });
+                        controller.enqueue(chunk);
+                    },
+                }),
+            );
+
+            fetch(session.uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': session.object.expectedMime,
+                },
+                body: countedStream,
+                signal,
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Upload failed with status ${response.status}.`);
+                    }
+
+                    subscriber.next({ type: HttpEventType.Response, status: response.status });
+                    subscriber.complete();
+                })
+                .catch((error: unknown) => subscriber.error(error));
         });
     }
 

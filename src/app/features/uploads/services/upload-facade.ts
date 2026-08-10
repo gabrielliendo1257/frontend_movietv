@@ -1,12 +1,11 @@
-import { inject, Injectable, signal } from '@angular/core';
-import { HttpEvent, HttpEventType } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { UploadState, UploadTask } from '@features/uploads/models/upload-task';
+import { inject, Injectable, computed, signal } from '@angular/core';
+import { HttpEventType } from '@angular/common/http';
+import { Observable, EMPTY, catchError, filter, map, switchMap, tap } from 'rxjs';
+import { ACTIVE_UPLOAD_STATES, UploadTask } from '@features/uploads/models/upload-task';
 import { MovieMetadata } from '@features/uploads/models/movie-metadata';
 import { UploadSessionDto } from '@features/uploads/models/upload-response';
-import { UploadSessionPersistence, PendingUpload } from '@features/uploads/services/upload-session-persistence';
-import { catchError, EMPTY, filter, map, switchMap, tap } from 'rxjs';
-import { UploadApiService } from '@features/uploads/services/upload-api-service';
+import { PendingUpload, UploadSessionPersistence } from '@features/uploads/services/upload-session-persistence';
+import { UploadApiService, UploadHttpEvent } from '@features/uploads/services/upload-api-service';
 
 @Injectable({
     providedIn: 'root',
@@ -15,41 +14,177 @@ export class UploadFacade {
     private readonly uploadApiService: UploadApiService = inject(UploadApiService);
     private readonly persistence = inject(UploadSessionPersistence);
 
-    readonly state = signal<UploadState>('idle');
-    readonly progress = signal(0);
-    readonly error = signal<string | null>(null);
-    readonly currentTask = signal<UploadTask | null>(null);
+    readonly tasks = signal<UploadTask[]>([]);
 
-    private resumeVersion = 0;
+    readonly activeCount = computed(() =>
+        this.tasks().filter((task) => ACTIVE_UPLOAD_STATES.has(task.state)).length,
+    );
+
+    private readonly versions = new Map<string, number>();
+    private readonly controllers = new Map<string, AbortController>();
 
     constructor() {
         this.resumePendingUpload();
     }
 
-    uploadMovie(file: File, metadata: MovieMetadata) {
-        this.resumeVersion++;
-        this.reset();
+    startUpload(file: File, metadata: MovieMetadata): string {
+        const uploadId = crypto.randomUUID();
+        const version = this.nextVersion(uploadId);
 
-        if (!file) {
-            this.handleError('Invalid file.');
+        this.tasks.update((tasks) => [
+            {
+                uploadId,
+                file,
+                fileName: file.name,
+                progress: 0,
+                state: 'requesting_session',
+                uploadUrl: '',
+                storageKey: '',
+                metadata,
+            },
+            ...tasks,
+        ]);
+
+        this.runNewUpload(uploadId, file, metadata, version);
+
+        return uploadId;
+    }
+
+    retry(uploadId: string): void {
+        const task = this.taskById(uploadId);
+        if (!task) return;
+
+        const version = this.nextVersion(uploadId);
+        this.updateTask(uploadId, { state: 'requesting_session', progress: 0, error: null });
+
+        const run = (file: File) => this.runNewUpload(uploadId, file, task.metadata, version);
+
+        if (task.file) {
+            run(task.file);
             return;
         }
-        this.state.set('requesting_session');
 
+        void this.persistence.loadFile(uploadId).then((file) => {
+            if (!this.isCurrent(uploadId, version)) return;
+
+            if (!file) {
+                this.updateTask(uploadId, { state: 'error', error: 'Upload session expired.' });
+                return;
+            }
+
+            this.updateTask(uploadId, { file });
+            run(file);
+        });
+    }
+
+    cancel(uploadId: string): void {
+        this.nextVersion(uploadId);
+
+        this.controllers.get(uploadId)?.abort();
+        this.controllers.delete(uploadId);
+
+        this.updateTask(uploadId, { state: 'cancelled' });
+
+        if (this.isStoredSession(uploadId)) {
+            this.persistence.removeSession();
+        }
+    }
+
+    remove(uploadId: string): void {
+        this.nextVersion(uploadId);
+
+        this.controllers.get(uploadId)?.abort();
+        this.controllers.delete(uploadId);
+
+        this.tasks.update((tasks) => tasks.filter((task) => task.uploadId !== uploadId));
+
+        void this.persistence.deleteFile(uploadId).catch(() => undefined);
+    }
+
+    taskById(uploadId: string): UploadTask | null {
+        return this.tasks().find((task) => task.uploadId === uploadId) ?? null;
+    }
+
+    private resumePendingUpload(): void {
+        const pending = this.persistence.loadSession();
+        if (!pending) return;
+
+        const uploadId = pending.session.uploadId;
+        const version = this.nextVersion(uploadId);
+
+        this.tasks.update((tasks) => [
+            {
+                uploadId,
+                file: null,
+                fileName: pending.fileName,
+                progress: 0,
+                state: 'resuming',
+                uploadUrl: pending.session.uploadUrl,
+                storageKey: pending.session.storageKey,
+                metadata: pending.metadata,
+            },
+            ...tasks,
+        ]);
+
+        void this.persistence.loadFile(uploadId)
+            .then((file) => {
+                if (!this.isCurrent(uploadId, version)) return;
+
+                if (!file) {
+                    this.failTask(uploadId, 'Upload session expired.');
+                    return;
+                }
+
+                this.updateTask(uploadId, { file, state: 'uploading' });
+
+                if (pending.stage === 'confirming') {
+                    this.updateTask(uploadId, { state: 'confirming' });
+
+                    this.uploadApiService
+                        .confirmUpload(uploadId, pending.metadata)
+                        .subscribe({
+                            next: () => {
+                                if (this.isCurrent(uploadId, version)) {
+                                    this.finishTask(uploadId, version);
+                                }
+                            },
+                            error: (error) => {
+                                if (this.isCurrent(uploadId, version)) {
+                                    this.failTask(uploadId, error);
+                                }
+                            },
+                        });
+                    return;
+                }
+
+                this.uploadAndConfirm(uploadId, file, pending.session, pending.metadata, version)
+                    .subscribe();
+            })
+            .catch(() => {
+                if (!this.isCurrent(uploadId, version)) return;
+
+                this.persistence.removeSession();
+                this.updateTask(uploadId, { state: 'error', error: 'Upload session expired.' });
+            });
+    }
+
+    private runNewUpload(
+        uploadId: string,
+        file: File,
+        metadata: MovieMetadata,
+        version: number,
+    ): void {
         this.uploadApiService
             .getCredentials(file)
             .pipe(
                 tap((session) => {
-                    this.currentTask.set({
-                        uploadId: session.uploadId,
-                        storageKey: session.storageKey,
-                        fileName: file.name,
-                        progress: 0,
-                        file,
+                    if (!this.isCurrent(uploadId, version)) return;
+
+                    this.updateTask(uploadId, {
                         uploadUrl: session.uploadUrl,
+                        storageKey: session.storageKey,
                         state: 'uploading',
                     });
-                    this.state.set('uploading');
 
                     const pending: PendingUpload = {
                         session,
@@ -62,98 +197,34 @@ export class UploadFacade {
                     void this.persistence.saveFile(session.uploadId, file).catch(() => undefined);
                 }),
 
-                switchMap((session) => this.uploadAndConfirm(file, session, metadata)),
+                switchMap((session) => {
+                    if (!this.isCurrent(uploadId, version)) return EMPTY;
+
+                    return this.uploadAndConfirm(uploadId, file, session, metadata, version);
+                }),
             )
-            .subscribe();
-    }
-
-    private resumePendingUpload(): void {
-        const pending = this.persistence.loadSession();
-        if (!pending) return;
-
-        const version = this.resumeVersion;
-        this.state.set('resuming');
-        this.currentTask.set({
-            uploadId: pending.session.uploadId,
-            storageKey: pending.session.storageKey,
-            fileName: pending.fileName,
-            progress: 0,
-            file: null,
-            uploadUrl: pending.session.uploadUrl,
-            state: 'resuming',
-        });
-
-        void this.persistence.loadFile(pending.session.uploadId)
-            .then((file) => {
-                if (version !== this.resumeVersion) return;
-
-                if (!file) {
-                    this.handleError('Upload session expired.');
-                    this.persistence.clear();
-                    return;
-                }
-
-                this.currentTask.update((task) =>
-                    task ? { ...task, file, state: 'uploading' as const } : task,
-                );
-                this.state.set('uploading');
-
-                if (pending.stage === 'confirming') {
-                    this.state.set('confirming');
-
-                    this.uploadApiService
-                        .confirmUpload(pending.session.uploadId, pending.metadata)
-                        .subscribe({
-                            next: () => {
-                                if (version === this.resumeVersion) {
-                                    this.finishUpload();
-                                }
-                            },
-                            error: (error) => {
-                                if (version === this.resumeVersion) {
-                                    this.failUpload(error);
-                                }
-                            },
-                        });
-                    return;
-                }
-
-                this.uploadAndConfirm(file, pending.session, pending.metadata, version)
-                    .pipe(
-                        tap(() => {
-                            if (version === this.resumeVersion) {
-                                this.finishUpload();
-                            }
-                        }),
-                        catchError((error) => {
-                            if (version === this.resumeVersion) {
-                                this.failUpload(error);
-                            }
-                            return EMPTY;
-                        }),
-                    )
-                    .subscribe();
-            })
-            .catch(() => {
-                if (version !== this.resumeVersion) return;
-
-                this.persistence.clear();
-                this.reset();
+            .subscribe({
+                error: (error) => {
+                    if (this.isCurrent(uploadId, version)) {
+                        this.failTask(uploadId, error);
+                    }
+                },
             });
     }
 
     private uploadAndConfirm(
+        uploadId: string,
         file: File,
         session: UploadSessionDto,
         metadata: MovieMetadata,
-        version?: number,
+        version: number,
     ): Observable<unknown> {
         return this.uploadApiService
-            .uploadToStorage(file, session)
+            .uploadToStorage(file, session, this.signalFor(uploadId))
             .pipe(
                 tap((event) => {
-                    if (version !== undefined && version !== this.resumeVersion) return;
-                    this.handleUploadEvent(event);
+                    if (!this.isCurrent(uploadId, version)) return;
+                    this.handleUploadEvent(uploadId, event);
                 }),
 
                 filter((event) => event.type === HttpEventType.Response),
@@ -161,9 +232,10 @@ export class UploadFacade {
                 map(() => session),
 
                 tap(() => {
-                    if (version !== undefined && version !== this.resumeVersion) return;
-                    this.state.set('confirming');
-                    this.updateSessionStage('confirming');
+                    if (!this.isCurrent(uploadId, version)) return;
+
+                    this.updateTask(uploadId, { state: 'confirming' });
+                    this.updateSessionStage(uploadId, 'confirming');
                 }),
 
                 switchMap((currentSession) =>
@@ -171,86 +243,86 @@ export class UploadFacade {
                         .confirmUpload(currentSession.uploadId, metadata)
                         .pipe(
                             tap(() => {
-                                if (version !== undefined && version !== this.resumeVersion) return;
-                                this.state.set('persisting');
+                                if (this.isCurrent(uploadId, version)) {
+                                    this.updateTask(uploadId, { state: 'persisting' });
+                                }
                             }),
                         ),
                 ),
 
+                tap(() => {
+                    if (this.isCurrent(uploadId, version)) {
+                        this.finishTask(uploadId, version);
+                    }
+                }),
+
                 catchError((error) => {
-                    if (version !== undefined && version !== this.resumeVersion) return EMPTY;
-                    this.failUpload(error);
+                    if (this.isCurrent(uploadId, version)) {
+                        this.failTask(uploadId, error);
+                    }
                     return EMPTY;
                 }),
             );
     }
 
-    private finishUpload(): void {
-        this.state.set('completed');
-        this.progress.set(100);
-        this.updateTask(100, 'completed');
-        this.persistence.clear();
+    private handleUploadEvent(uploadId: string, event: UploadHttpEvent): void {
+        if (event.type !== HttpEventType.UploadProgress) return;
+
+        const percent = Math.round((100 * event.loaded) / (event.total ?? 1));
+
+        this.updateTask(uploadId, { progress: percent, state: 'uploading' });
     }
 
-    private failUpload(error: unknown): void {
-        console.error(error);
-        this.handleError('Upload failed.');
-        this.persistence.clear();
+    private finishTask(uploadId: string, version: number): void {
+        if (!this.isCurrent(uploadId, version)) return;
+
+        this.updateTask(uploadId, { state: 'completed', progress: 100 });
+
+        if (this.isStoredSession(uploadId)) {
+            this.persistence.clear();
+        }
     }
 
-    private updateSessionStage(stage: 'uploading' | 'confirming'): void {
+    private failTask(uploadId: string, error: unknown): void {
+        const message = error instanceof Error ? error.message : 'Upload failed.';
+
+        this.updateTask(uploadId, { state: 'error', error: message });
+
+        if (this.isStoredSession(uploadId)) {
+            this.persistence.removeSession();
+        }
+    }
+
+    private updateSessionStage(uploadId: string, stage: 'uploading' | 'confirming'): void {
         const pending = this.persistence.loadSession();
-        if (!pending) return;
+        if (!pending || pending.session.uploadId !== uploadId) return;
 
         this.persistence.saveSession({ ...pending, stage });
     }
 
-    private handleUploadEvent(event: HttpEvent<unknown>): void {
-        switch (event.type) {
-            case HttpEventType.UploadProgress:
-                const percent = Math.round((100 * event.loaded) / (event.total ?? 1));
-
-                this.progress.set(percent);
-                this.updateTask(percent, 'uploading');
-
-                break;
-            case HttpEventType.Response:
-                this.progress.set(100);
-
-                break;
-        }
+    private isStoredSession(uploadId: string): boolean {
+        return this.persistence.loadSession()?.session.uploadId === uploadId;
     }
 
-    private updateTask(progress: number, state: UploadState): void {
-        const task = this.currentTask();
-
-        if (!task) return;
-
-        this.currentTask.set({
-            ...task,
-            progress,
-            state,
-        });
+    private updateTask(uploadId: string, patch: Partial<UploadTask>): void {
+        this.tasks.update((tasks) =>
+            tasks.map((task) => (task.uploadId === uploadId ? { ...task, ...patch } : task)),
+        );
     }
 
-    private handleError(message: string): void {
-        this.state.set('error');
-        this.error.set(message);
-
-        const task = this.currentTask();
-
-        if (!task) return;
-
-        this.currentTask.set({
-            ...task,
-            state: 'error',
-        });
+    private nextVersion(uploadId: string): number {
+        const version = (this.versions.get(uploadId) ?? 0) + 1;
+        this.versions.set(uploadId, version);
+        return version;
     }
 
-    private reset(): void {
-        this.state.set('idle');
-        this.progress.set(0);
-        this.error.set(null);
-        this.currentTask.set(null);
+    private isCurrent(uploadId: string, version: number): boolean {
+        return this.versions.get(uploadId) === version;
+    }
+
+    private signalFor(uploadId: string): AbortSignal {
+        const controller = new AbortController();
+        this.controllers.set(uploadId, controller);
+        return controller.signal;
     }
 }

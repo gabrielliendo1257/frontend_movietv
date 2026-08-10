@@ -1,11 +1,15 @@
 @if (authService.isLogged()) {
     <app-navbar-ui
         [user]="navUser"
+        [uploadCount]="activeUploads()"
+        (uploadClick)="uploadsDrawerOpen.set(true)"
         (searchSubmit)="onSearch($event)"
         (logoutClick)="logout()"
     ></app-navbar-ui>
 } @else {
     <app-navbar-ui
+        [uploadCount]="activeUploads()"
+        (uploadClick)="uploadsDrawerOpen.set(true)"
         (signInClick)="startLogin()"
         (searchSubmit)="onSearch($event)"
     ></app-navbar-ui>
@@ -14,5 +18,7 @@
 <ng-content></ng-content>
 
 <app-footer></app-footer>
+
+<app-upload-drawer [(isOpen)]="uploadsDrawerOpen" />
 
 <app-toast-container />

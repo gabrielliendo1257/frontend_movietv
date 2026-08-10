@@ -49,6 +49,10 @@ export class UploadSessionPersistence {
         }
     }
 
+    removeSession(): void {
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+
     saveFile(uploadId: string, file: File): Promise<void> {
         return this.withStore<void>((store) => store.put(file, uploadId));
     }
@@ -69,7 +73,7 @@ export class UploadSessionPersistence {
         return this.withStore<void>((store) => store.delete(DRAFT_FILE_KEY));
     }
 
-    private deleteFile(uploadId: string): Promise<void> {
+    deleteFile(uploadId: string): Promise<void> {
         return this.withStore<void>((store) => store.delete(uploadId));
     }
 

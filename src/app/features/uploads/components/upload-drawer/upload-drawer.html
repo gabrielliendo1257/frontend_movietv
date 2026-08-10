@@ -1,0 +1,75 @@
+<div class="drawer-root" [class.open]="isOpen()">
+    <div class="drawer-scrim" (click)="close()"></div>
+
+    <aside class="drawer-panel" role="dialog" aria-label="Uploads">
+        <header class="drawer-header">
+            <div class="drawer-title">
+                <h2>Uploads</h2>
+                @if (facade.activeCount() > 0) {
+                    <span class="active-badge">{{ facade.activeCount() }} active</span>
+                }
+            </div>
+            <button class="close-btn" (click)="close()" aria-label="Close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </header>
+
+        <div class="drawer-body">
+            @for (task of facade.tasks(); track task.uploadId) {
+                <div class="task-card">
+                    <div class="task-header">
+                        <span class="task-name" [title]="task.fileName">{{ task.fileName }}</span>
+                        <span class="task-state" [class]="task.state">{{ stateLabel(task.state) }}</span>
+                    </div>
+
+                    <div class="progress-track">
+                        <div
+                            class="progress-fill"
+                            [class.indeterminate]="task.state === 'requesting_session' || task.state === 'resuming' || task.state === 'persisting' || task.state === 'confirming'"
+                            [style.width.%]="task.state === 'completed' ? 100 : task.progress"
+                        ></div>
+                    </div>
+
+                    <div class="task-meta">
+                        <span class="task-percent">
+                            @if (task.state === 'completed' || task.state === 'error' || task.state === 'cancelled') {
+                                {{ task.state === 'completed' ? 'Done' : '' }}
+                            } @else {
+                                {{ task.progress }}%
+                            }
+                        </span>
+                        @if (task.error) {
+                            <span class="task-error" [title]="task.error">{{ task.error }}</span>
+                        }
+                    </div>
+
+                    <div class="task-actions">
+                        @if (isActive(task.state)) {
+                            <button class="act-btn danger" (click)="cancel(task)">Cancel</button>
+                        } @else if (task.state === 'error' || task.state === 'cancelled') {
+                            <button class="act-btn" (click)="retry(task)">Retry</button>
+                            <button class="act-btn ghost" (click)="remove(task)">Remove</button>
+                        } @else if (task.state === 'completed') {
+                            <button class="act-btn ghost" (click)="remove(task)">Clear</button>
+                        }
+                    </div>
+                </div>
+            } @empty {
+                <div class="empty-state">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <p>No uploads yet.</p>
+                    <span>Select a video in the upload page to start.</span>
+                </div>
+            }
+        </div>
+    </aside>
+</div>

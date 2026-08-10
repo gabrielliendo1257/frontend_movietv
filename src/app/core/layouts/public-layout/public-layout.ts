@@ -1,19 +1,26 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Footer } from '@core/layouts/footer/footer';
 import { AuthService } from '@core/services/auth.service';
 import { NavbarUi, NavUser } from '@core/layouts/navbar-ui/navbar-ui';
 import { ToastContainer } from '@core/components/toast-container/toast-container';
+import { UploadDrawer } from '@features/uploads/components/upload-drawer/upload-drawer';
+import { UploadFacade } from '@features/uploads/services/upload-facade';
 import { TmdbService } from '@features/movies/services/tmdb.service';
 
 @Component({
     selector: 'app-public-layout',
-    imports: [Footer, NavbarUi, ToastContainer],
+    imports: [Footer, NavbarUi, ToastContainer, UploadDrawer],
     templateUrl: './public-layout.html',
     styleUrl: './public-layout.css',
 })
 export class PublicLayout {
     readonly authService = inject(AuthService);
     private readonly tmdbService = inject(TmdbService);
+    private readonly uploadFacade = inject(UploadFacade);
+
+    readonly uploadsDrawerOpen = signal(false);
+
+    readonly activeUploads = computed(() => this.uploadFacade.activeCount());
 
     // TODO(BFF): reemplazar por el perfil de GET /web/home (profile: {id, username, email, plan, enabled})
     // cuando la feature home del BFF se consuma desde el frontend.
