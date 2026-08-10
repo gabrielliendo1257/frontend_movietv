@@ -1,5 +1,6 @@
 export type UploadState =
     | 'idle'
+    | 'resuming'
     | 'requesting_session'
     | 'uploading'
     | 'persisting'
@@ -9,7 +10,7 @@ export type UploadState =
 
 export interface UploadTask {
     uploadId: string;
-    file: File;
+    file: File | null;
     fileName: string;
     progress: number;
     state: UploadState;

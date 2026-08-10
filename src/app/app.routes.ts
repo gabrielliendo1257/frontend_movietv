@@ -1,6 +1,5 @@
 import {Routes} from '@angular/router';
 import {PersonalMovies} from '@features/movies/pages/personal-movies/personal-movies';
-import {MovieDetail} from '@features/movies/pages/movie-detail/movie-detail';
 import { authGuard } from '@core/auth/auth-guard';
 
 export const routes: Routes = [
@@ -18,7 +17,8 @@ export const routes: Routes = [
             },
             {
                 path: 'movies/:id',
-                component: MovieDetail,
+                loadComponent: () =>
+                    import('./features/movies/pages/movie-detail/movie-detail').then(m => m.MovieDetail),
                 canMatch: [authGuard]
             },
             {

@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core';
 import { Footer } from '@core/layouts/footer/footer';
 import { AuthService } from '@core/services/auth.service';
 import { NavbarUi, NavUser } from '@core/layouts/navbar-ui/navbar-ui';
+import { ToastContainer } from '@core/components/toast-container/toast-container';
 import { TmdbService } from '@features/movies/services/tmdb.service';
 
 @Component({
     selector: 'app-public-layout',
-    imports: [Footer, NavbarUi],
+    imports: [Footer, NavbarUi, ToastContainer],
     templateUrl: './public-layout.html',
     styleUrl: './public-layout.css',
 })

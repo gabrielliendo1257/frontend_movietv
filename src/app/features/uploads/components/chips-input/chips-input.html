@@ -1,0 +1,39 @@
+<div class="chip-input-group">
+    <input
+        class="input"
+        type="text"
+        [placeholder]="placeholder()"
+        [value]="newChip()"
+        [disabled]="isDisabled()"
+        (input)="onInput($event)"
+        (keydown.enter)="$event.preventDefault(); addChip()"
+    />
+    <button
+        class="btn btn-sm"
+        type="button"
+        [disabled]="isDisabled() || !newChip().trim()"
+        (click)="addChip()"
+    >+ Add</button>
+</div>
+
+@if (chips().length) {
+    <div class="chip-list">
+        @for (chip of chips(); track $index) {
+            <span class="chip">
+                {{ chip }}
+                <button
+                    class="chip-remove"
+                    type="button"
+                    [disabled]="isDisabled()"
+                    (click)="removeChip($index)"
+                >✕</button>
+            </span>
+        }
+    </div>
+} @else {
+    <p class="empty-hint">{{ emptyHint() }}</p>
+}
+
+@if (errorMessage(); as message) {
+    <p class="error-hint">{{ message }}</p>
+}

@@ -25,7 +25,6 @@
               }
             ],
             "styles": [
-              "src/custom-theme.scss",
               "src/styles.css"
             ]
           },
@@ -39,7 +38,7 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "8kB",
+                  "maximumWarning": "12kB",
                   "maximumError": "16kB"
                 }
               ],

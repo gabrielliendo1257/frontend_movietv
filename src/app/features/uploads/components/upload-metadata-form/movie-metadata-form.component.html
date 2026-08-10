@@ -21,13 +21,21 @@
                 </svg>
                 Select file
             </button>
-            <button class="autocomplete-btn" (click)="openSearch.emit()">
+            <button class="autocomplete-btn" (click)="openSearchModal()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                      stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"/>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
                 Autocomplete
+            </button>
+            <button class="autocomplete-btn clear-btn" (click)="clearForm()" [disabled]="isUploading()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                Limpiar
             </button>
         </div>
 
@@ -78,16 +86,17 @@
                 <div class="field">
                     <label class="field-label" for="title">Title *</label>
                     <input id="title" class="input" type="text"
-                           [ngModel]="m.title"
-                           (ngModelChange)="updateField('title', $event)"
+                           [formControl]="controls.title"
                            placeholder="e.g. Inception"/>
+                    @if (form.controls.title.invalid && form.controls.title.touched) {
+                        <p class="error-hint">Title is required.</p>
+                    }
                 </div>
 
                 <div class="field">
                     <label class="field-label" for="originalTitle">Original Title</label>
                     <input id="originalTitle" class="input" type="text"
-                           [ngModel]="m.originalTitle"
-                           (ngModelChange)="updateField('originalTitle', $event)"
+                           [formControl]="controls.originalTitle"
                            placeholder="e.g. Origen"/>
                 </div>
 
@@ -95,15 +104,13 @@
                     <div class="field flex-1">
                         <label class="field-label" for="year">Year</label>
                         <input id="year" class="input" type="number"
-                               [ngModel]="m.year"
-                               (ngModelChange)="updateField('year', $event)"
+                               [formControl]="controls.year"
                                placeholder="2010" min="1900" max="2099"/>
                     </div>
                     <div class="field flex-1">
                         <label class="field-label" for="duration">Duration</label>
                         <input id="duration" class="input" type="text"
-                               [ngModel]="m.duration"
-                               (ngModelChange)="updateField('duration', $event)"
+                               [formControl]="controls.duration"
                                placeholder="2h 28m"/>
                     </div>
                 </div>
@@ -112,15 +119,13 @@
                     <div class="field flex-1">
                         <label class="field-label" for="country">Country</label>
                         <input id="country" class="input" type="text"
-                               [ngModel]="m.country"
-                               (ngModelChange)="updateField('country', $event)"
+                               [formControl]="controls.country"
                                placeholder="USA"/>
                     </div>
                     <div class="field flex-1">
                         <label class="field-label" for="language">Language</label>
                         <input id="language" class="input" type="text"
-                               [ngModel]="m.language"
-                               (ngModelChange)="updateField('language', $event)"
+                               [formControl]="controls.language"
                                placeholder="English"/>
                     </div>
                 </div>
@@ -128,16 +133,14 @@
                 <div class="field">
                     <label class="field-label" for="releaseDate">Release Date</label>
                     <input id="releaseDate" class="input" type="text"
-                           [ngModel]="m.release_date"
-                           (ngModelChange)="updateField('release_date', $event)"
+                           [formControl]="controls.release_date"
                            placeholder="July 16, 2010"/>
                 </div>
 
                 <div class="field">
                     <label class="field-label" for="director">Director</label>
                     <input id="director" class="input" type="text"
-                           [ngModel]="m.director"
-                           (ngModelChange)="updateField('director', $event)"
+                           [formControl]="controls.director"
                            placeholder="Christopher Nolan"/>
                 </div>
             </div>
@@ -151,24 +154,22 @@
                     <div class="star-rating">
                         @for (star of ratingStars; track star) {
                             <span class="star-btn" [class.filled]="star <= m.popularity"
-                                  (click)="setRating($event)">★</span>
+                                  (click)="setRating(star)">★</span>
                         }
                     </div>
                     <input type="range" min="1" max="10" step="0.5"
-                           [value]="m.popularity"
-                           (input)="setRating($event)"
+                           [formControl]="controls.popularity"
                            class="rating-slider"/>
                 </div>
 
                 <div class="field">
                     <label class="field-label" for="posterUrl">Poster URL</label>
                     <input id="posterUrl" class="input" type="url"
-                           [ngModel]="m.poster_path"
-                           (ngModelChange)="updateField('poster_path', $event)"
+                           [formControl]="controls.poster_path"
                            placeholder="https://..."/>
                     @if (m.poster_path) {
                         <div class="poster-preview">
-                            <img [src]="''+m.poster_path" alt="poster preview" (error)="updateField('poster_path', '')"/>
+                            <img [src]="m.poster_path" alt="poster preview" (error)="onPosterError()"/>
                         </div>
                     }
                 </div>
@@ -177,59 +178,28 @@
             <!-- GENRES -->
             <div class="form-card">
                 <h3 class="card-title">Genres</h3>
-                <div class="chip-input-group">
-                    <input class="input" type="text"
-                           [(ngModel)]="genreInput"
-                           (keydown.enter)="$event.preventDefault(); addGenre()"
-                           placeholder="Type and press Enter"/>
-                    <button class="btn btn-sm" (click)="addGenre()">+ Add</button>
-                </div>
-                @if (m.genres.length) {
-                    <div class="chip-list">
-
-                        @for (g of m.genres; track g; let i = $index) {
-                            <span class="chip">
-                                {{ g }}
-                                <button class="chip-remove" (click)="removeGenre(i)">✕</button>
-                            </span>
-                        }
-
-                    </div>
-                } @else {
-                    <p class="empty-hint">No genres added yet.</p>
-                }
+                <app-chips-input
+                    [formControl]="controls.genres"
+                    [required]="true"
+                    emptyHint="No genres added yet."
+                />
             </div>
 
             <!-- CAST -->
             <div class="form-card">
                 <h3 class="card-title">Cast</h3>
-                <div class="chip-input-group">
-                    <input class="input" type="text"
-                           [(ngModel)]="castInput"
-                           (keydown.enter)="$event.preventDefault(); addCast()"
-                           placeholder="Actor name"/>
-                    <button class="btn btn-sm" (click)="addCast()">+ Add</button>
-                </div>
-                @if (m.cast.length) {
-                    <div class="chip-list">
-                        @for (actor of m.cast; track actor; let i = $index) {
-                            <span class="chip">
-                                {{ actor }}
-                                <button class="chip-remove" (click)="removeCast(i)">✕</button>
-                            </span>
-                        }
-                    </div>
-                } @else {
-                    <p class="empty-hint">No cast added yet.</p>
-                }
+                <app-chips-input
+                    [formControl]="controls.cast"
+                    placeholder="Actor name"
+                    emptyHint="No cast added yet."
+                />
             </div>
 
             <!-- SYNOPSIS -->
             <div class="form-card full-width">
                 <h3 class="card-title">Synopsis</h3>
                 <textarea class="textarea"
-                          [ngModel]="m.overview"
-                          (ngModelChange)="updateField('overview', $event)"
+                          [formControl]="controls.overview"
                           placeholder="Write a brief synopsis of the movie..."
                           rows="5"></textarea>
             </div>
@@ -237,25 +207,11 @@
             <!-- AWARDS -->
             <div class="form-card full-width">
                 <h3 class="card-title">Awards</h3>
-                <div class="chip-input-group">
-                    <input class="input" type="text"
-                           [(ngModel)]="awardInput"
-                           (keydown.enter)="$event.preventDefault(); addAward()"
-                           placeholder="Award name"/>
-                    <button class="btn btn-sm" (click)="addAward()">+ Add</button>
-                </div>
-                @if (m.awards.length) {
-                    <div class="chip-list">
-                        @for (award of m.awards; track award; let i = $index) {
-                            <span class="chip">
-                                {{ award }}
-                                <button class="chip-remove" (click)="removeAward(i)">✕</button>
-                            </span>
-                        }
-                    </div>
-                } @else {
-                    <p class="empty-hint">No awards added yet.</p>
-                }
+                <app-chips-input
+                    [formControl]="controls.awards"
+                    placeholder="Award name"
+                    emptyHint="No awards added yet."
+                />
             </div>
 
             <!-- UPLOADER -->
@@ -282,13 +238,18 @@
                     </div>
                 }
 
-                <button class="btn" type="submit" (click)="startUpload()">Upload</button>
+                <button
+                    class="btn"
+                    type="submit"
+                    (click)="startUpload()"
+                    [disabled]="isUploading() || !canUpload()"
+                >Upload</button>
             </div>
         </div>
     }
 
     <!-- ============ PREVIEW TAB ============ -->
-    @if (activeTab === 'preview') {
+    @else if (activeTab === 'preview') {
         <div class="movie-card" [class.empty]="!m.title && !m.overview && !m.cast.length && !m.genres.length">
             <div class="poster-section">
                 @if (m.poster_path) {
@@ -408,4 +369,9 @@
             </div>
         </div>
     }
+
+    <app-movie-search-modal
+        [(isOpen)]="searchModalIsOpen"
+        (movieSelected)="onMovieSelected($event)"
+    />
 </div>

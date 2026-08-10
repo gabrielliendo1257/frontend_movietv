@@ -1,5 +1,5 @@
-import {Component, EventEmitter, Output} from '@angular/core';
-import {FormsModule} from '@angular/forms';
+import { Component, output } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 @Component({
     selector: 'app-input-search',
@@ -13,7 +13,7 @@ export class InputSearch {
 
     querySearch: string = '';
 
-    @Output() queryChange = new EventEmitter<string>();
+    queryChange = output<string>();
 
     onSearchChange() {
         this.queryChange.emit(this.querySearch);

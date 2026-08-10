@@ -88,6 +88,24 @@
     border-color: rgba(245, 197, 24, 0.35);
 }
 
+.autocomplete-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.clear-btn {
+    background: rgba(255, 71, 87, 0.08);
+    color: #ff6b7a;
+    border-color: rgba(255, 71, 87, 0.25);
+}
+
+.clear-btn:hover {
+    background: rgba(255, 71, 87, 0.16);
+    color: #ff4757;
+    border-color: rgba(255, 71, 87, 0.45);
+}
+
 .search-btn {
     background: var(--accent-dim);
     color: var(--accent);
@@ -215,6 +233,12 @@
     font-weight: 600;
     color: var(--text-secondary);
     letter-spacing: 0.02em;
+}
+
+.error-hint {
+    font-size: 0.75rem;
+    color: #ff4757;
+    margin-top: 0.35rem;
 }
 
 .input, .textarea {
@@ -423,16 +447,7 @@
     display: block;
 }
 
-/* ─── CHIP INPUT ─── */
-.chip-input-group {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.chip-input-group .input {
-    flex: 1;
-}
-
+/* ─── BUTTONS ─── */
 .btn {
     background: var(--accent-dim);
     color: var(--accent);
@@ -455,50 +470,6 @@
 .btn-sm {
     padding: 0.5rem 0.85rem;
     font-size: 0.75rem;
-}
-
-.chip-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-}
-
-.chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.75rem;
-    padding: 0.3rem 0.5rem 0.3rem 0.7rem;
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    color: var(--text-secondary);
-    transition: border-color var(--transition);
-}
-
-.chip:hover {
-    border-color: var(--text-muted);
-}
-
-.chip-remove {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-size: 0.6rem;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-    transition: color 0.15s;
-}
-
-.chip-remove:hover {
-    color: #ff4757;
-}
-
-.empty-hint {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    font-style: italic;
 }
 
 /* ─── PREVIEW/MOVIE CARD ─── */
@@ -813,10 +784,6 @@
 
     .rating-duration {
         flex-wrap: wrap;
-    }
-
-    .chip-input-group {
-        flex-direction: column;
     }
 
     .tabs {

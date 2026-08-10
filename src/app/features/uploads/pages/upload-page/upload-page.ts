@@ -1,31 +1,21 @@
-import { Component, inject, signal } from '@angular/core';
-import { MovieSearchModalComponent } from '@features/uploads/components/upload-panel/movie-search-modal.component';
+import { Component, inject } from '@angular/core';
 import { MovieMetadataFormComponent } from '@features/uploads/components/upload-metadata-form/movie-metadata-form.component';
-import { UploadFacade } from '@features/uploads/services/upload-facade';
-import { MovieMetadata } from '@features/uploads/components/upload-panel/movie-data';
+import { ToastService } from '@core/services/toast.service';
 
 @Component({
     selector: 'app-upload-page',
-    imports: [MovieMetadataFormComponent, MovieSearchModalComponent],
+    imports: [MovieMetadataFormComponent],
     templateUrl: './upload-page.html',
     styleUrl: './upload-page.css',
 })
 export class UploadPage {
-    uploadFacade = inject(UploadFacade);
+    private readonly toastService = inject(ToastService);
 
-    movieModalIsOpen = signal(false);
-    receiverSelectedFile = signal<File | null>(null);
-    selectedMovie = signal<MovieMetadata | null>(null);
+    notifyUploadSucceeded = () => {
+        this.toastService.success('Movie uploaded successfully.');
+    };
 
-    onMovieSelected(movie: MovieMetadata): void {
-        this.selectedMovie.set(movie);
-    }
-
-    startUpload(): void {
-        const file = this.receiverSelectedFile();
-        const metadata = this.selectedMovie();
-        if (!file || !metadata) return;
-
-        this.uploadFacade.uploadMovie(file);
-    }
+    notifyUploadFailed = (message: string) => {
+        this.toastService.error(message);
+    };
 }

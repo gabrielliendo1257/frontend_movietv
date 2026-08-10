@@ -1,127 +1,91 @@
-import {Component, computed, effect, ElementRef, inject, input, output, signal, ViewChild} from '@angular/core';
-import {FormsModule} from '@angular/forms';
-import {MovieMetadata} from '@features/uploads/components/upload-panel/movie-data';
-import {UploadFacade} from '@features/uploads/services/upload-facade';
-
-function emptyMovie(): MovieMetadata {
-    return {
-        id: 0, title: '', originalTitle: '', year: null, genres: [],
-        popularity: 5, duration: '', director: '', cast: [],
-        overview: '', poster_path: '', release_date: '',
-        country: '', language: '', awards: []
-    };
-}
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, computed, effect, ElementRef, inject, input, signal, viewChild } from '@angular/core';
+import { FormControlStatus, ReactiveFormsModule } from '@angular/forms';
+import { MovieMetadata } from '@features/uploads/models/movie-metadata';
+import { UploadFacade } from '@features/uploads/services/upload-facade';
+import { MovieDraftStore } from '@features/uploads/services/movie-draft-store';
+import { MovieSearchModal } from '../movie-search-modal/movie-search-modal';
+import { ChipsInput } from '../chips-input/chips-input';
+import { UploadSessionPersistence } from '@features/uploads/services/upload-session-persistence';
 
 @Component({
     selector: 'app-movie-metadata-form',
     standalone: true,
-    imports: [FormsModule],
+    imports: [ReactiveFormsModule, MovieSearchModal, ChipsInput],
     templateUrl: './movie-metadata-form.component.html',
-    styleUrls: ['./movie-metadata-form.component.css']
+    styleUrl: './movie-metadata-form.component.css'
 })
 export class MovieMetadataFormComponent {
     private readonly uploadFacade = inject(UploadFacade);
+    private readonly draftStore = inject(MovieDraftStore);
+    private readonly fileStorage = inject(UploadSessionPersistence);
 
-    @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+    readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
+    readonly searchModalIsOpen = signal(false);
 
-    movieData = input<MovieMetadata | null>(null);
-
-    openSearch = output<void>();
-    emittedFileSelected = output<File>();
-    uploadRequested = output<void>();
+    onUploadSucceeded = input<() => void>();
+    onUploadFailed = input<(message: string) => void>();
 
     readonly progress = this.uploadFacade.progress;
     readonly error = this.uploadFacade.error;
     readonly uploadState = this.uploadFacade.state;
 
-    readonly formMovie = signal<MovieMetadata>(emptyMovie());
+    readonly form = this.draftStore.form;
+    readonly controls = this.draftStore.controls;
+
+    readonly popularity = this.form.controls.popularity;
+
     readonly fileSelected = signal<File | null>(null);
 
-    readonly isUploading =
-        computed(() => {
-            const state = this.uploadState();
-
-            return (
-                state === 'requesting_session'
-                || state === 'uploading'
-                || state === 'confirming'
-                || state === 'persisting'
-            );
-        });
-
-    // Temp inputs for chips
-    genreInput = '';
-    castInput = '';
-    awardInput = '';
-
-    // UI state
-    activeTab: 'form' | 'preview' = 'form';
+    private readonly formStatus = signal<FormControlStatus>('INVALID');
 
     constructor() {
+        this.formStatus.set(this.form.status);
+
+        this.form.statusChanges
+            .pipe(takeUntilDestroyed())
+            .subscribe((status) => this.formStatus.set(status));
+
+        this.restoreDraftFile();
+
         effect(() => {
-            const data = this.movieData();
-            if (data) {
-                this.formMovie.set({...data});
+            if (this.uploadState() === 'completed') {
+                this.onUploadSucceeded()?.();
+                this.draftStore.reset();
+                this.clearSelectedFile();
+            } else if (this.uploadState() === 'error') {
+                this.onUploadFailed()?.(this.error() ?? 'Upload failed.');
             }
         });
     }
 
+    readonly isUploading = computed(() => {
+        const state = this.uploadState();
+
+        return (
+            state === 'resuming'
+            || state === 'requesting_session'
+            || state === 'uploading'
+            || state === 'confirming'
+            || state === 'persisting'
+        );
+    });
+
+    readonly canUpload = computed(() => !!this.fileSelected() && this.formStatus() === 'VALID');
+
+    // UI state
+    activeTab: 'form' | 'preview' = 'form';
+
     get m(): MovieMetadata {
-        return this.formMovie();
+        return this.form.getRawValue();
     }
 
     get ratingStars(): number[] {
-        return Array.from({length: 10}, (_, i) => i + 1);
+        return Array.from({ length: 10 }, (_, i) => i + 1);
     }
 
-    setRating(event: Event): void {
-        let eventValue = (event.target as HTMLInputElement).value
-        this.formMovie.update(m => ({...m, popularity: Number(eventValue)}));
-    }
-
-    updateField<K extends keyof MovieMetadata>(key: K, value: MovieMetadata[K]): void {
-        this.formMovie.update(m => ({...m, [key]: value}));
-    }
-
-    addGenre(): void {
-        const val = this.genreInput.trim();
-        if (val) {
-            this.formMovie.update(m =>
-                ({
-                    ...m,
-                    genres: {...m.genres}
-                })
-            );
-        }
-        this.genreInput = '';
-    }
-
-    removeGenre(i: number): void {
-        this.formMovie.update(m => ({...m, genres: m.genres.filter((_, idx) => idx !== i)}));
-    }
-
-    addCast(): void {
-        const val = this.castInput.trim();
-        if (val) {
-            this.formMovie.update(m => ({...m, cast: [...m.cast, val]}));
-        }
-        this.castInput = '';
-    }
-
-    removeCast(i: number): void {
-        this.formMovie.update(m => ({...m, cast: m.cast.filter((_, idx) => idx !== i)}));
-    }
-
-    addAward(): void {
-        const val = this.awardInput.trim();
-        if (val) {
-            this.formMovie.update(m => ({...m, awards: [...m.awards, val]}));
-        }
-        this.awardInput = '';
-    }
-
-    removeAward(i: number): void {
-        this.formMovie.update(m => ({...m, awards: m.awards.filter((_, idx) => idx !== i)}));
+    setRating(value: number): void {
+        this.popularity.setValue(value);
     }
 
     roundRating(val: number): number {
@@ -139,8 +103,12 @@ export class MovieMetadataFormComponent {
         if (!file) return;
 
         this.fileSelected.set(file);
-        this.emittedFileSelected.emit(file);
+        void this.fileStorage.saveDraftFile(file).catch(() => undefined);
         input.value = '';
+    }
+
+    onPosterError(): void {
+        this.form.controls.poster_path.setValue('');
     }
 
     formatFileSize(bytes: number): string {
@@ -150,10 +118,41 @@ export class MovieMetadataFormComponent {
     }
 
     selectFile(): void {
-        this.fileInput.nativeElement.click();
+        this.fileInput()?.nativeElement.click();
     }
 
     startUpload(): void {
-        this.uploadRequested.emit()
+        const file = this.fileSelected();
+        if (!file) return;
+
+        this.uploadFacade.uploadMovie(file, this.form.getRawValue());
+    }
+
+    openSearchModal(): void {
+        this.searchModalIsOpen.set(true);
+    }
+
+    onMovieSelected(movie: MovieMetadata): void {
+        this.draftStore.patchFromMovie(movie);
+        this.searchModalIsOpen.set(false);
+    }
+
+    clearForm(): void {
+        this.draftStore.reset();
+        this.clearSelectedFile();
+        this.searchModalIsOpen.set(false);
+    }
+
+    private restoreDraftFile(): void {
+        void this.fileStorage.loadDraftFile().then((file) => {
+            if (file) {
+                this.fileSelected.set(file);
+            }
+        });
+    }
+
+    private clearSelectedFile(): void {
+        this.fileSelected.set(null);
+        void this.fileStorage.clearDraftFile().catch(() => undefined);
     }
 }

@@ -1,0 +1,118 @@
+.chip-input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.chip-input-group .input {
+    flex: 1;
+}
+
+.input {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    padding: 0.55rem 0.75rem;
+    outline: none;
+    transition: border-color var(--transition);
+    font-family: inherit;
+    width: 100%;
+}
+
+.input::placeholder {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.input:focus {
+    border-color: var(--border-focus);
+}
+
+.input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.btn:hover {
+    background: rgba(245, 197, 24, 0.18);
+    color: var(--accent-hover);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-sm {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.75rem;
+}
+
+.chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem 0.3rem 0.7rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    transition: border-color var(--transition);
+}
+
+.chip:hover {
+    border-color: var(--text-muted);
+}
+
+.chip-remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.chip-remove:hover {
+    color: #ff4757;
+}
+
+.chip-remove:disabled {
+    cursor: not-allowed;
+}
+
+.empty-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.error-hint {
+    font-size: 0.75rem;
+    color: #ff4757;
+    margin-top: 0.5rem;
+}
