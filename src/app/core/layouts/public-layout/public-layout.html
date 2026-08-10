@@ -2,6 +2,9 @@
     <app-navbar-ui
         [user]="navUser"
         [uploadCount]="activeUploads()"
+        [activeRoute]="activeRoute()"
+        (navClick)="onNavClick($event)"
+        (logoClick)="onNavClick('/movies')"
         (uploadClick)="uploadsDrawerOpen.set(true)"
         (searchSubmit)="onSearch($event)"
         (logoutClick)="logout()"
@@ -9,6 +12,9 @@
 } @else {
     <app-navbar-ui
         [uploadCount]="activeUploads()"
+        [activeRoute]="activeRoute()"
+        (navClick)="onNavClick($event)"
+        (logoClick)="onNavClick('/movies')"
         (uploadClick)="uploadsDrawerOpen.set(true)"
         (signInClick)="startLogin()"
         (searchSubmit)="onSearch($event)"

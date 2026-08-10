@@ -26,8 +26,8 @@ export class NavbarUi {
     searchQuery = model<string>('');
     activeRoute = input<string>('');
     links = input<NavLink[]>([
-        {label: 'Home', route: '/', icon: '⌂'},
-        {label: 'Upload', route: '/upload', icon: '↑'},
+        {label: 'Movies', route: '/movies', icon: '⌂'},
+        {label: 'Upload', route: '/uploads', icon: '↑'},
     ]);
 
     logoClick = output<void>();

@@ -1,4 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter, map, startWith } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Footer } from '@core/layouts/footer/footer';
 import { AuthService } from '@core/services/auth.service';
 import { NavbarUi, NavUser } from '@core/layouts/navbar-ui/navbar-ui';
@@ -17,10 +20,24 @@ export class PublicLayout {
     readonly authService = inject(AuthService);
     private readonly tmdbService = inject(TmdbService);
     private readonly uploadFacade = inject(UploadFacade);
+    private readonly router = inject(Router);
 
     readonly uploadsDrawerOpen = signal(false);
 
     readonly activeUploads = computed(() => this.uploadFacade.activeCount());
+
+    readonly activeRoute = toSignal(
+        this.router.events.pipe(
+            filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+            map(() => this.router.url),
+            startWith(this.router.url),
+        ),
+        { initialValue: this.router.url },
+    );
+
+    onNavClick(route: string): void {
+        this.router.navigate([route]);
+    }
 
     // TODO(BFF): reemplazar por el perfil de GET /web/home (profile: {id, username, email, plan, enabled})
     // cuando la feature home del BFF se consuma desde el frontend.
