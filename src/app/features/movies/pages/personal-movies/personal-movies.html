@@ -4,6 +4,8 @@
         <app-card-movie-ui
             [title]="movie.title"
             [posterUrl]="'https://image.tmdb.org/t/p/w500'+movie.poster_path"
+            [rating]="movie.vote_average"
+            [year]="movie.release_date?.slice(0, 4)"
         ></app-card-movie-ui>  <!-- TODO Cambiar el poster_path -->
     }
 </div>

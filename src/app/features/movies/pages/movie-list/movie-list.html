@@ -21,6 +21,8 @@
                 <app-card-movie-ui
                     [title]="movie.title"
                     [posterUrl]="movie.poster_path ?? ''"
+                    [rating]="movie.vote_average"
+                    [year]="movie.release_date?.slice(0, 4)"
                 ></app-card-movie-ui>
             }
         </div>
