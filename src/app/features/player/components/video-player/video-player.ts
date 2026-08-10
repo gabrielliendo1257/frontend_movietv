@@ -9,6 +9,7 @@ import {
     signal,
     viewChild,
 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 
 interface MenuState {
     kind: 'quality' | 'speed' | 'subtitles' | 'audio';
@@ -27,7 +28,7 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
     readonly videoEl = viewChild<ElementRef<HTMLVideoElement>>('video');
     readonly rootEl = viewChild<ElementRef<HTMLDivElement>>('root');
 
-    private readonly document = inject(Document);
+    private readonly document = inject(DOCUMENT);
 
     readonly isPlaying = signal(false);
     readonly isMuted = signal(false);
