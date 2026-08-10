@@ -7,7 +7,7 @@
     width: 200px;
     border-radius: 16px;
     overflow: hidden;
-    background: #141418;
+    background: #141419;
     border: 1px solid #26262e;
     transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     cursor: pointer;
@@ -15,9 +15,9 @@
 
 .card:hover {
     transform: translateY(-6px) scale(1.02);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(245, 197, 24, 0.35),
-        0 0 24px rgba(245, 197, 24, 0.12);
-    border-color: rgba(245, 197, 24, 0.45);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 61, 0, 0.35),
+        0 0 24px rgba(255, 61, 0, 0.12);
+    border-color: rgba(255, 61, 0, 0.45);
 }
 
 .poster {
@@ -67,8 +67,8 @@
     gap: 0.3rem;
     padding: 0.22rem 0.55rem;
     border-radius: 999px;
-    background: rgba(245, 197, 24, 0.92);
-    color: #0c0c0f;
+    background: rgba(255, 61, 0, 0.92);
+    color: #fff;
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.02em;
@@ -105,33 +105,35 @@
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: rgba(245, 197, 24, 0.95);
-    color: #0c0c0f;
+    background: rgba(255, 61, 0, 0.95);
+    color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     transform: scale(0.8);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
-    box-shadow: 0 0 0 0 rgba(245, 197, 24, 0.4);
+    box-shadow: 0 0 0 0 rgba(255, 61, 0, 0.4);
 }
 
 .card:hover .play-icon {
     transform: scale(1);
-    box-shadow: 0 0 0 8px rgba(245, 197, 24, 0.15);
+    box-shadow: 0 0 0 8px rgba(255, 61, 0, 0.15);
 }
 
 .play-icon svg {
     margin-left: 2px;
 }
 
-/* ─── Bottom scrim + text ─── */
-.scrim {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 1.1rem 0.8rem 0.7rem;
-    background: linear-gradient(to top, rgba(10, 10, 13, 0.95) 0%, rgba(10, 10, 13, 0.55) 60%, transparent 100%);
+/* ─── Info below poster ─── */
+.info {
+    padding: 0.7rem 0.8rem 0.8rem;
+}
+
+.title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
 }
 
 .title {
@@ -147,14 +149,36 @@
 }
 
 .card:hover .title {
-    color: #f5c518;
+    color: #ff6a3d;
+}
+
+.chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    color: #8a8a96;
+    opacity: 0;
+    transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.card:hover .chevron {
+    opacity: 1;
+}
+
+.chevron:hover {
+    background: rgba(255, 61, 0, 0.15);
+    color: #ff6a3d;
 }
 
 .meta {
     display: block;
     font-size: 0.72rem;
     font-weight: 500;
-    color: #9a9aa8;
+    color: #8a8a96;
     margin-top: 0.15rem;
     white-space: nowrap;
     overflow: hidden;

@@ -1,12 +1,106 @@
+<div class="movies-page">
+    @if (hero(); as heroMovie) {
+        <section class="hero" [style.background-image]="'url(' + heroMovie.backdrop_path + ')'">
+            <div class="hero-scrim"></div>
+            <div class="hero-content">
+                <span class="hero-badge">En tendencia</span>
+                <h1 class="hero-title">{{ heroMovie.title }}</h1>
 
-<div class="content__movies">
-    @for (movie of movies; track movie.id) {
-        <app-card-movie-ui
-            [title]="movie.title"
-            [posterUrl]="'https://image.tmdb.org/t/p/w500'+movie.poster_path"
-            [rating]="movie.vote_average"
-            [year]="movie.release_date?.slice(0, 4)"
-        ></app-card-movie-ui>  <!-- TODO Cambiar el poster_path -->
+                <div class="hero-meta">
+                    <span class="hero-rating">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                        {{ heroMovie.vote_average.toFixed(1) }}
+                    </span>
+                    <span class="hero-meta-item">{{ heroMovie.release_date.slice(0, 4) }}</span>
+                    @if (heroGenres(heroMovie.genre_ids); as genres) {
+                        <span class="hero-meta-item">{{ genres }}</span>
+                    }
+                </div>
+
+                @if (heroMovie.overview) {
+                    <p class="hero-overview">{{ heroMovie.overview }}</p>
+                }
+
+                <div class="hero-actions">
+                    <button class="hero-cta primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        Watch Now
+                    </button>
+                    <button class="hero-cta secondary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polygon points="10 8 16 12 10 16 10 8"/>
+                        </svg>
+                        Watch Trailer
+                    </button>
+                </div>
+            </div>
+        </section>
     }
-</div>
 
+    @if (trendingRow().length) {
+        <section class="movie-row">
+            <h2 class="row-title">En tendencia</h2>
+            <div class="row-scroll">
+                @for (movie of trendingRow(); track movie.id) {
+                    <app-card-movie-ui
+                        [title]="movie.title"
+                        [posterUrl]="movie.poster_path ?? ''"
+                        [rating]="movie.vote_average"
+                        [year]="movie.release_date.slice(0, 4)"
+                        [genre]="heroGenres(movie.genre_ids) || null"
+                    ></app-card-movie-ui>
+                }
+            </div>
+        </section>
+    }
+
+    @if (latestRow().length) {
+        <section class="movie-row">
+            <h2 class="row-title">Últimas películas</h2>
+            <div class="row-scroll">
+                @for (movie of latestRow(); track movie.id) {
+                    <app-card-movie-ui
+                        [title]="movie.title"
+                        [posterUrl]="movie.poster_path ?? ''"
+                        [rating]="movie.vote_average"
+                        [year]="movie.release_date.slice(0, 4)"
+                        [genre]="heroGenres(movie.genre_ids) || null"
+                    ></app-card-movie-ui>
+                }
+            </div>
+        </section>
+    }
+
+    @if (featured().length) {
+        <section class="movie-row">
+            <h2 class="row-title">Destacadas</h2>
+            <div class="featured-grid">
+                @for (movie of featured(); track movie.id) {
+                    <app-featured-movie-card
+                        [title]="movie.title"
+                        [backdropUrl]="movie.backdrop_path ?? ''"
+                        [overview]="movie.overview"
+                        [meta]="movie.release_date.slice(0, 4) + (heroGenres(movie.genre_ids) ? ' · ' + heroGenres(movie.genre_ids) : '')"
+                    ></app-featured-movie-card>
+                }
+            </div>
+        </section>
+    }
+
+    <div class="content__movies">
+        @for (movie of movies; track movie.id) {
+            <app-card-movie-ui
+                [title]="movie.title"
+                [posterUrl]="'https://image.tmdb.org/t/p/w500'+movie.poster_path"
+                [rating]="movie.vote_average"
+                [year]="movie.release_date?.slice(0, 4)"
+            ></app-card-movie-ui>
+        }
+    </div>
+</div>

@@ -6,6 +6,7 @@ import { Footer } from '@core/layouts/footer/footer';
 import { AuthService } from '@core/services/auth.service';
 import { NavbarUi, NavUser } from '@core/layouts/navbar-ui/navbar-ui';
 import { ToastContainer } from '@core/components/toast-container/toast-container';
+import { ToastService } from '@core/services/toast.service';
 import { UploadDrawer } from '@features/uploads/components/upload-drawer/upload-drawer';
 import { UploadFacade } from '@features/uploads/services/upload-facade';
 import { TmdbService } from '@features/movies/services/tmdb.service';
@@ -21,6 +22,7 @@ export class PublicLayout {
     private readonly tmdbService = inject(TmdbService);
     private readonly uploadFacade = inject(UploadFacade);
     private readonly router = inject(Router);
+    private readonly toastService = inject(ToastService);
 
     readonly uploadsDrawerOpen = signal(false);
 
@@ -37,6 +39,10 @@ export class PublicLayout {
 
     onNavClick(route: string): void {
         this.router.navigate([route]);
+    }
+
+    onNotificationsClick(): void {
+        this.toastService.info('Las notificaciones llegan pronto.');
     }
 
     // TODO(BFF): reemplazar por el perfil de GET /web/home (profile: {id, username, email, plan, enabled})

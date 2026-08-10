@@ -5,9 +5,13 @@ import { MovieDetails, MovieSummary, Pagination } from '@features/movies/models/
 
 const TMDB_API_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
+const TMDB_BACKDROP_URL = 'https://image.tmdb.org/t/p/w1280';
 
 const withPosterUrl = <T extends { poster_path: string | null }>(movie: T): T =>
     movie.poster_path ? { ...movie, poster_path: `${TMDB_IMAGE_URL}${movie.poster_path}` } : movie;
+
+const withBackdropUrl = <T extends { backdrop_path: string | null }>(movie: T): T =>
+    movie.backdrop_path ? { ...movie, backdrop_path: `${TMDB_BACKDROP_URL}${movie.backdrop_path}` } : movie;
 
 @Injectable({
     providedIn: 'root',
@@ -32,6 +36,33 @@ export class TmdbService {
                 },
             })
             .pipe(map((page) => ({ ...page, results: page.results.map(withPosterUrl) })));
+    }
+
+    getTrendingMovies(): Observable<MovieSummary[]> {
+        return this.http
+            .get<Pagination<MovieSummary>>(`${TMDB_API_URL}/trending/movie/week`, {
+                headers: this.authHeaders(),
+                params: { language: 'es-ES' },
+            })
+            .pipe(map((page) => page.results.map(withPosterUrl).map(withBackdropUrl)));
+    }
+
+    getPopularMovies(): Observable<MovieSummary[]> {
+        return this.http
+            .get<Pagination<MovieSummary>>(`${TMDB_API_URL}/movie/popular`, {
+                headers: this.authHeaders(),
+                params: { language: 'es-ES' },
+            })
+            .pipe(map((page) => page.results.map(withPosterUrl).map(withBackdropUrl)));
+    }
+
+    getNowPlayingMovies(): Observable<MovieSummary[]> {
+        return this.http
+            .get<Pagination<MovieSummary>>(`${TMDB_API_URL}/movie/now_playing`, {
+                headers: this.authHeaders(),
+                params: { language: 'es-ES' },
+            })
+            .pipe(map((page) => page.results.map(withPosterUrl).map(withBackdropUrl)));
     }
 
     findMovieDetails(movieId: number): Observable<MovieDetails> {

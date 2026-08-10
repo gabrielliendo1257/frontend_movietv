@@ -65,7 +65,7 @@
     font-size: var(--text-xs);
     font-weight: 600;
     color: var(--color-primary);
-    background: rgba(75, 140, 255, 0.12);
+    background: rgba(255, 61, 0, 0.12);
     padding: 2px 8px;
     border-radius: 999px;
 }
@@ -135,7 +135,7 @@
 .task-state.uploading,
 .task-state.requesting_session,
 .task-state.resuming {
-    background: rgba(75, 140, 255, 0.12);
+    background: rgba(255, 61, 0, 0.12);
     color: var(--color-primary);
 }
 

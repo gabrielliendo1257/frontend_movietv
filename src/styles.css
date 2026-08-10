@@ -107,14 +107,14 @@ table {
    ======================================= */
 :root {
     /* Colores principales */
-    --color-bg: #f8fafc;
-    --color-card: #ffffff;
-    --color-text: #1e293b;
-    --color-heading: #0f172a;
-    --color-muted: #64748b;
-    --color-border: #e2e8f0;
-    --color-primary: #4b8cff;
-    --color-primary-hover: #3a78e0;
+    --color-bg: #0b0b0f;
+    --color-card: #141419;
+    --color-text: #e4e4ec;
+    --color-heading: #ffffff;
+    --color-muted: #8a8a96;
+    --color-border: #26262e;
+    --color-primary: #ff3d00;
+    --color-primary-hover: #ff6a3d;
     --color-danger: #ef4444;
     --color-success: #22c55e;
     --color-warning: #f59e0b;
@@ -207,7 +207,7 @@ body {
 }
 
 html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+body { margin: 0; font-family: 'Inter', Roboto, "Helvetica Neue", sans-serif; background: var(--color-bg); color: var(--color-text); }
 
 .btn {
     background: #646cff;

@@ -16,7 +16,7 @@
     padding: 0.75rem 0.9rem;
     background: #141418;
     border: 1px solid #26262e;
-    border-left: 3px solid #4b8cff;
+    border-left: 3px solid #ff3d00;
     border-radius: 8px;
     color: #e4e4ec;
     font-size: 0.85rem;
@@ -37,7 +37,7 @@
 }
 
 .toast.info {
-    border-left-color: #4b8cff;
+    border-left-color: #ff3d00;
 }
 
 .toast-indicator {
@@ -60,7 +60,7 @@
 }
 
 .toast.info .toast-indicator {
-    color: #4b8cff;
+    color: #ff3d00;
 }
 
 .toast-message {

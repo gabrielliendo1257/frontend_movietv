@@ -11,6 +11,7 @@ export interface NavLink {
     label: string;
     route: string;
     icon?: string;
+    children?: NavLink[];
 }
 
 @Component({
@@ -26,8 +27,25 @@ export class NavbarUi {
     searchQuery = model<string>('');
     activeRoute = input<string>('');
     links = input<NavLink[]>([
-        {label: 'Movies', route: '/movies', icon: '⌂'},
-        {label: 'Upload', route: '/uploads', icon: '↑'},
+        { label: 'Home', route: '/movies' },
+        {
+            label: 'Movies',
+            route: '/movies',
+            children: [
+                { label: 'En tendencia', route: '/movies' },
+                { label: 'Últimas películas', route: '/movies' },
+                { label: 'Más vistas', route: '/movies' },
+            ],
+        },
+        {
+            label: 'TV Shows',
+            route: '/movies',
+            children: [
+                { label: 'Series', route: '/movies' },
+                { label: 'Próximamente', route: '/movies' },
+            ],
+        },
+        { label: 'Upload', route: '/uploads' },
     ]);
 
     logoClick = output<void>();
@@ -40,11 +58,14 @@ export class NavbarUi {
     settingsClick = output<void>();
     logoutClick = output<void>();
     uploadClick = output<void>();
+    notificationsClick = output<void>();
 
     uploadCount = input(0);
 
     menuOpen = signal(false);
     mobileSearchOpen = signal(false);
+    mobileNavOpen = signal(false);
+    openDropdown = signal<string | null>(null);
 
     @HostListener('document:click', ['$event'])
     onDocClick(e: MouseEvent): void {
@@ -52,5 +73,19 @@ export class NavbarUi {
         if (!target.closest('.user-menu')) {
             this.menuOpen.set(false);
         }
+        if (!target.closest('.nav-dropdown')) {
+            this.openDropdown.set(null);
+        }
+    }
+
+    onLinkClick(link: NavLink): void {
+        if (link.children?.length) {
+            this.openDropdown.set(this.openDropdown() === link.label ? null : link.label);
+            return;
+        }
+
+        this.openDropdown.set(null);
+        this.mobileNavOpen.set(false);
+        this.navClick.emit(link.route);
     }
 }
