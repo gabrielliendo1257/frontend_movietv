@@ -1,5 +1,14 @@
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Component, computed, effect, ElementRef, inject, input, signal, viewChild } from '@angular/core';
+import {
+    Component,
+    computed,
+    effect,
+    ElementRef,
+    inject,
+    input,
+    signal,
+    viewChild,
+} from '@angular/core';
 import { FormControlStatus, ReactiveFormsModule } from '@angular/forms';
 import { MovieMetadata } from '@features/uploads/models/movie-metadata';
 import { ACTIVE_UPLOAD_STATES } from '@features/uploads/models/upload-task';
@@ -14,7 +23,7 @@ import { UploadSessionPersistence } from '@features/uploads/services/upload-sess
     standalone: true,
     imports: [ReactiveFormsModule, MovieSearchModal, ChipsInput],
     templateUrl: './movie-metadata-form.component.html',
-    styleUrl: './movie-metadata-form.component.css'
+    styleUrl: './movie-metadata-form.component.css',
 })
 export class MovieMetadataFormComponent {
     private readonly uploadFacade = inject(UploadFacade);
@@ -80,7 +89,9 @@ export class MovieMetadataFormComponent {
 
     readonly uploadState = computed(() => this.ownTask()?.state ?? 'idle');
 
-    readonly canUpload = computed(() => !!this.fileSelected() && this.formStatus() === 'VALID' && !this.isUploading());
+    readonly canUpload = computed(
+        () => !!this.fileSelected() && this.formStatus() === 'VALID' && !this.isUploading(),
+    );
 
     // UI state
     activeTab: 'form' | 'preview' = 'form';

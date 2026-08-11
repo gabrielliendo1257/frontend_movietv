@@ -1,6 +1,6 @@
 import { inject, Injectable, computed, signal } from '@angular/core';
 import { HttpEventType } from '@angular/common/http';
-import { Observable, EMPTY, catchError, filter, map, switchMap, tap } from 'rxjs';
+import { Observable, EMPTY, Subscription, catchError, filter, map, switchMap, tap } from 'rxjs';
 import { ACTIVE_UPLOAD_STATES, UploadTask } from '@features/uploads/models/upload-task';
 import { MovieMetadata } from '@features/uploads/models/movie-metadata';
 import { UploadSessionDto } from '@features/uploads/models/upload-response';
@@ -21,7 +21,7 @@ export class UploadFacade {
     );
 
     private readonly versions = new Map<string, number>();
-    private readonly controllers = new Map<string, AbortController>();
+    private readonly subscriptions = new Map<string, Subscription>();
 
     constructor() {
         this.resumePendingUpload();
@@ -80,8 +80,8 @@ export class UploadFacade {
     cancel(uploadId: string): void {
         this.nextVersion(uploadId);
 
-        this.controllers.get(uploadId)?.abort();
-        this.controllers.delete(uploadId);
+        this.subscriptions.get(uploadId)?.unsubscribe();
+        this.subscriptions.delete(uploadId);
 
         this.updateTask(uploadId, { state: 'cancelled' });
 
@@ -93,8 +93,8 @@ export class UploadFacade {
     remove(uploadId: string): void {
         this.nextVersion(uploadId);
 
-        this.controllers.get(uploadId)?.abort();
-        this.controllers.delete(uploadId);
+        this.subscriptions.get(uploadId)?.unsubscribe();
+        this.subscriptions.delete(uploadId);
 
         this.tasks.update((tasks) => tasks.filter((task) => task.uploadId !== uploadId));
 
@@ -157,8 +157,10 @@ export class UploadFacade {
                     return;
                 }
 
-                this.uploadAndConfirm(uploadId, file, pending.session, pending.metadata, version)
-                    .subscribe();
+                this.trackSubscription(
+                    uploadId,
+                    this.uploadAndConfirm(uploadId, file, pending.session, pending.metadata, version).subscribe(),
+                );
             })
             .catch(() => {
                 if (!this.isCurrent(uploadId, version)) return;
@@ -174,7 +176,7 @@ export class UploadFacade {
         metadata: MovieMetadata,
         version: number,
     ): void {
-        this.uploadApiService
+        const subscription = this.uploadApiService
             .getCredentials(file)
             .pipe(
                 tap((session) => {
@@ -210,6 +212,8 @@ export class UploadFacade {
                     }
                 },
             });
+
+        this.trackSubscription(uploadId, subscription);
     }
 
     private uploadAndConfirm(
@@ -220,7 +224,7 @@ export class UploadFacade {
         version: number,
     ): Observable<unknown> {
         return this.uploadApiService
-            .uploadToStorage(file, session, this.signalFor(uploadId))
+            .uploadToStorage(file, session)
             .pipe(
                 tap((event) => {
                     if (!this.isCurrent(uploadId, version)) return;
@@ -320,9 +324,8 @@ export class UploadFacade {
         return this.versions.get(uploadId) === version;
     }
 
-    private signalFor(uploadId: string): AbortSignal {
-        const controller = new AbortController();
-        this.controllers.set(uploadId, controller);
-        return controller.signal;
+    private trackSubscription(uploadId: string, subscription: Subscription): void {
+        this.subscriptions.get(uploadId)?.unsubscribe();
+        this.subscriptions.set(uploadId, subscription);
     }
 }
