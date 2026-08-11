@@ -1,3 +1,8 @@
+.movies-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
 .content__movies {
     display: grid;
