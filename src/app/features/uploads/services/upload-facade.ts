@@ -145,8 +145,13 @@ export class UploadFacade {
                 if (pending.stage === 'confirming') {
                     this.updateTask(uploadId, { state: 'confirming' });
 
+                    if (!pending.movieId) {
+                        this.failTask(uploadId, 'Upload session expired.');
+                        return;
+                    }
+
                     this.uploadApiService
-                        .confirmUpload(uploadId, pending.metadata)
+                        .confirmMovieComplete(pending.movieId, uploadId, file.size)
                         .subscribe({
                             next: () => {
                                 if (this.isCurrent(uploadId, version)) {
@@ -252,11 +257,12 @@ export class UploadFacade {
                         tap((created) => {
                             if (this.isCurrent(uploadId, version)) {
                                 this.movieStreamStore.setMovie(created.id, currentSession.uploadId);
+                                this.updateSessionStage(uploadId, 'confirming', created.id);
                             }
                         }),
-                        switchMap(() =>
+                        switchMap((created) =>
                             this.uploadApiService
-                                .confirmUpload(currentSession.uploadId, metadata)
+                                .confirmMovieComplete(created.id, currentSession.uploadId, file.size)
                                 .pipe(
                                     tap(() => {
                                         if (this.isCurrent(uploadId, version)) {
@@ -315,11 +321,15 @@ export class UploadFacade {
         }
     }
 
-    private updateSessionStage(uploadId: string, stage: 'uploading' | 'confirming'): void {
+    private updateSessionStage(
+        uploadId: string,
+        stage: 'uploading' | 'confirming',
+        movieId?: number,
+    ): void {
         const pending = this.persistence.loadSession();
         if (!pending || pending.session.uploadId !== uploadId) return;
 
-        this.persistence.saveSession({ ...pending, stage });
+        this.persistence.saveSession({ ...pending, stage, movieId });
     }
 
     private isStoredSession(uploadId: string): boolean {

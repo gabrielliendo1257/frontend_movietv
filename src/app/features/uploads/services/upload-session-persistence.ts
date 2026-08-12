@@ -12,6 +12,7 @@ export interface PendingUpload {
     fileName: string;
     stage: 'uploading' | 'confirming';
     metadata: MovieMetadata;
+    movieId?: number;
 }
 
 @Injectable({

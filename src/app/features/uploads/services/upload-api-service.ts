@@ -3,7 +3,6 @@ import { HttpClient, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { UploadRequest } from '@features/uploads/models/upload-request';
 import { UploadSessionDto } from '@features/uploads/models/upload-response';
-import { MovieMetadata } from '@features/uploads/models/movie-metadata';
 import { environment } from '../../../../environments/environment';
 
 export type UploadHttpEvent = HttpEvent<unknown>;
@@ -41,9 +40,14 @@ export class UploadApiService {
         });
     }
 
-    confirmUpload(uploadId: string, metadata: MovieMetadata): Observable<unknown> {
-        return this.http.post(`${this.uploadsUrl}/${uploadId}/complete`, metadata, {
-            withCredentials: true,
-        });
+    confirmMovieComplete(movieId: number, storageId: string, sizeBytes: number): Observable<unknown> {
+        return this.http.post(
+            `${environment.backendAddress}/web/movies/${movieId}/complete`,
+            {
+                storageId: Number(storageId),
+                sizeBytes,
+            },
+            { withCredentials: true },
+        );
     }
 }

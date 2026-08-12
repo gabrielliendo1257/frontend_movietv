@@ -12,6 +12,6 @@ export class StreamingService {
     private readonly streamingUrl = environment.backendAddress + '/web/uploads/streaming';
 
     stream(objectId: string): Observable<StreamingSession> {
-        return this.http.post<StreamingSession>(this.streamingUrl, { objectId });
+        return this.http.post<StreamingSession>(this.streamingUrl, { objectId }, { withCredentials: true });
     }
 }
