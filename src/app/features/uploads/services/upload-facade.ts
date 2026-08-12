@@ -8,6 +8,7 @@ import { PendingUpload, UploadSessionPersistence } from '@features/uploads/servi
 import { UploadApiService, UploadHttpEvent } from '@features/uploads/services/upload-api-service';
 import { MovieProviderService } from '@features/movies/services/movie-provider.service';
 import { CreateMovieRequest } from '@features/movies/models/web-movie';
+import { MovieStreamStore } from '@features/movies/services/movie-stream-store';
 
 @Injectable({
     providedIn: 'root',
@@ -16,6 +17,7 @@ export class UploadFacade {
     private readonly uploadApiService: UploadApiService = inject(UploadApiService);
     private readonly persistence = inject(UploadSessionPersistence);
     private readonly movieProviderService = inject(MovieProviderService);
+    private readonly movieStreamStore = inject(MovieStreamStore);
 
     readonly tasks = signal<UploadTask[]>([]);
 
@@ -247,6 +249,11 @@ export class UploadFacade {
 
                 switchMap((currentSession) =>
                     this.movieProviderService.create(this.toCreateRequest(metadata)).pipe(
+                        tap((created) => {
+                            if (this.isCurrent(uploadId, version)) {
+                                this.movieStreamStore.setMovie(created.id, currentSession.uploadId);
+                            }
+                        }),
                         switchMap(() =>
                             this.uploadApiService
                                 .confirmUpload(currentSession.uploadId, metadata)

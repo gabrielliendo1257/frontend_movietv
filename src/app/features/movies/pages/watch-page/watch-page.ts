@@ -2,6 +2,8 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MovieProviderService } from '@features/movies/services/movie-provider.service';
+import { StreamingService } from '@features/movies/services/streaming.service';
+import { MovieStreamStore } from '@features/movies/services/movie-stream-store';
 import { TmdbService } from '@features/movies/services/tmdb.service';
 import { WebMovie } from '@features/movies/models/web-movie';
 import { MovieDetails, MovieSummary } from '@features/movies/models/the-movie-db';
@@ -20,6 +22,8 @@ export class WatchPage implements OnInit {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly movieProviderService = inject(MovieProviderService);
+    private readonly streamingService = inject(StreamingService);
+    private readonly movieStreamStore = inject(MovieStreamStore);
     private readonly tmdbService = inject(TmdbService);
 
     readonly movie = signal<WebMovie | null>(null);
@@ -112,6 +116,19 @@ export class WatchPage implements OnInit {
                     : `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
             );
         }
+        this.resolveStreaming(movie.id);
+    }
+
+    private resolveStreaming(movieId: number): void {
+        const storageId = this.movieStreamStore.getStorageId(movieId);
+        if (!storageId) return;
+
+        this.streamingService.stream(storageId).subscribe({
+            next: (session) => {
+                if (session.streamingUrl) this.videoSrc.set(session.streamingUrl);
+            },
+            error: (error: unknown) => console.error('Streaming unavailable, using sample video', error),
+        });
     }
 
     private formatRuntime(minutes: number): string {
