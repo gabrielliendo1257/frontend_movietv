@@ -116,14 +116,14 @@ export class WatchPage implements OnInit {
                     : `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
             );
         }
-        this.resolveStreaming(movie.id);
+        this.resolveStreaming(movie);
     }
 
-    private resolveStreaming(movieId: number): void {
-        const storageId = this.movieStreamStore.getStorageId(movieId);
-        if (!storageId) return;
+    private resolveStreaming(movie: WebMovie): void {
+        const objectId = movie.objectId ?? this.movieStreamStore.getStorageId(movie.id);
+        if (objectId == null) return;
 
-        this.streamingService.stream(storageId).subscribe({
+        this.streamingService.stream(String(objectId)).subscribe({
             next: (session) => {
                 if (session.streamingUrl) this.videoSrc.set(session.streamingUrl);
             },

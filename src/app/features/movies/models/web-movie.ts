@@ -4,6 +4,7 @@ export type MovieStatus = 'DRAFT' | 'PUBLISHED';
 
 export interface WebMovie extends MovieMetadata {
     status: MovieStatus;
+    objectId?: number | null;
 }
 
 export type CreateMovieRequest = Omit<MovieMetadata, 'id'>;

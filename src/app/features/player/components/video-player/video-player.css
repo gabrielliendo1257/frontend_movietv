@@ -36,7 +36,7 @@
     padding-left: 6px;
     cursor: pointer;
     transition: transform 0.15s ease, background 0.15s ease;
-    z-index: 5;
+    z-index: 20;
 }
 
 .center-play:hover {
@@ -58,6 +58,8 @@
     border-top-color: var(--color-primary, #ff3d00);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+    z-index: 20;
+    pointer-events: none;
     z-index: 5;
 }
 
@@ -80,6 +82,15 @@
     opacity: 1;
     transition: opacity 0.25s ease;
     z-index: 10;
+    pointer-events: none;
+}
+
+.controls .timeline-area,
+.controls .ctrl-btn,
+.controls input,
+.controls .menu-dropdown,
+.controls .menu-dropdown button {
+    pointer-events: auto;
 }
 
 .controls-hidden .controls {
