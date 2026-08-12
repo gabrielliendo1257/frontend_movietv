@@ -100,9 +100,9 @@
         @for (movie of movies; track movie.id) {
             <app-card-movie-ui
                 [title]="movie.title"
-                [posterUrl]="'https://image.tmdb.org/t/p/w500'+movie.poster_path"
-                [rating]="movie.vote_average"
-                [year]="movie.release_date?.slice(0, 4)"
+                [posterUrl]="posterUrl(movie)"
+                [rating]="movie.popularity"
+                [year]="movie.release_date.slice(0, 4)"
                 [link]="'/watch/' + movie.id"
             ></app-card-movie-ui>
         }

@@ -1,8 +1,9 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { MovieApiService } from '@features/movies/services/movie-api.service';
+import { HttpErrorResponse } from '@angular/common/http';
+import { MovieProviderService } from '@features/movies/services/movie-provider.service';
 import { TmdbService } from '@features/movies/services/tmdb.service';
-import { RequestMedia } from '@features/movies/models/movie-models';
+import { WebMovie } from '@features/movies/models/web-movie';
 import { MovieDetails, MovieSummary } from '@features/movies/models/the-movie-db';
 import { VideoPlayer } from '@features/player/components/video-player/video-player';
 import { CardMovieUi } from '@features/movies/components/card-movie-ui/card-movie-ui';
@@ -18,10 +19,10 @@ const SAMPLE_VIDEO_URL = 'https://commondatastorage.googleapis.com/gtv-videos-bu
 export class WatchPage implements OnInit {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
-    private readonly movieApiService = inject(MovieApiService);
+    private readonly movieProviderService = inject(MovieProviderService);
     private readonly tmdbService = inject(TmdbService);
 
-    readonly movie = signal<RequestMedia | null>(null);
+    readonly movie = signal<WebMovie | null>(null);
     readonly details = signal<MovieDetails | null>(null);
     readonly videoSrc = signal(SAMPLE_VIDEO_URL);
     readonly poster = signal('');
@@ -36,7 +37,7 @@ export class WatchPage implements OnInit {
         if (this.year()) parts.push(this.year());
         const runtime = this.details()?.runtime;
         if (runtime) parts.push(this.formatRuntime(runtime));
-        const rating = this.details()?.vote_average ?? this.movie()?.vote_average;
+        const rating = this.details()?.vote_average ?? this.movie()?.popularity;
         if (rating != null) parts.push(`${rating.toFixed(1)} ★`);
         return parts.join(' · ');
     });
@@ -61,15 +62,16 @@ export class WatchPage implements OnInit {
     private load(id: number): void {
         this.loading.set(true);
 
-        this.movieApiService.listAll().subscribe({
-            next: (movies) => {
-                const movie = movies.find((item) => item.id === id) ?? null;
+        this.movieProviderService.findById(id).subscribe({
+            next: (movie) => {
                 this.movie.set(movie);
                 this.applyMedia(movie);
                 this.loading.set(false);
             },
-            error: () => {
-                this.applyMedia(null);
+            error: (error: unknown) => {
+                if (error instanceof HttpErrorResponse && error.status !== 404) {
+                    console.error('Web movie unavailable', error);
+                }
                 this.loading.set(false);
             },
         });
@@ -97,24 +99,18 @@ export class WatchPage implements OnInit {
         });
     }
 
-    private applyMedia(movie: RequestMedia | null): void {
-        if (movie) {
-            this.title.set(movie.title);
-            this.year.set(movie.release_date?.slice(0, 4) ?? '');
-            this.overview.set(movie.overview ?? '');
-            this.poster.set(movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '');
-        }
+    private applyMedia(movie: WebMovie | null): void {
+        if (!movie) return;
 
-        const firstFile = movie?.s3_data[0];
-        if (firstFile?.object_key) {
-            this.movieApiService.streamingSession(firstFile.object_key).subscribe({
-                next: (session) => {
-                    if (session.presigned_url) {
-                        this.videoSrc.set(session.presigned_url);
-                    }
-                },
-                error: () => console.error('streaming session unavailable'),
-            });
+        this.title.set(movie.title);
+        this.year.set(movie.release_date?.slice(0, 4) ?? '');
+        this.overview.set(movie.overview ?? '');
+        if (movie.poster_path) {
+            this.poster.set(
+                movie.poster_path.startsWith('http')
+                    ? movie.poster_path
+                    : `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
+            );
         }
     }
 

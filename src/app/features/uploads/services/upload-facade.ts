@@ -6,6 +6,8 @@ import { MovieMetadata } from '@features/uploads/models/movie-metadata';
 import { UploadSessionDto } from '@features/uploads/models/upload-response';
 import { PendingUpload, UploadSessionPersistence } from '@features/uploads/services/upload-session-persistence';
 import { UploadApiService, UploadHttpEvent } from '@features/uploads/services/upload-api-service';
+import { MovieProviderService } from '@features/movies/services/movie-provider.service';
+import { CreateMovieRequest } from '@features/movies/models/web-movie';
 
 @Injectable({
     providedIn: 'root',
@@ -13,6 +15,7 @@ import { UploadApiService, UploadHttpEvent } from '@features/uploads/services/up
 export class UploadFacade {
     private readonly uploadApiService: UploadApiService = inject(UploadApiService);
     private readonly persistence = inject(UploadSessionPersistence);
+    private readonly movieProviderService = inject(MovieProviderService);
 
     readonly tasks = signal<UploadTask[]>([]);
 
@@ -243,15 +246,19 @@ export class UploadFacade {
                 }),
 
                 switchMap((currentSession) =>
-                    this.uploadApiService
-                        .confirmUpload(currentSession.uploadId, metadata)
-                        .pipe(
-                            tap(() => {
-                                if (this.isCurrent(uploadId, version)) {
-                                    this.updateTask(uploadId, { state: 'persisting' });
-                                }
-                            }),
+                    this.movieProviderService.create(this.toCreateRequest(metadata)).pipe(
+                        switchMap(() =>
+                            this.uploadApiService
+                                .confirmUpload(currentSession.uploadId, metadata)
+                                .pipe(
+                                    tap(() => {
+                                        if (this.isCurrent(uploadId, version)) {
+                                            this.updateTask(uploadId, { state: 'persisting' });
+                                        }
+                                    }),
+                                ),
                         ),
+                    ),
                 ),
 
                 tap(() => {
@@ -269,8 +276,12 @@ export class UploadFacade {
             );
     }
 
-    private handleUploadEvent(uploadId: string, event: UploadHttpEvent): void {
-        if (event.type !== HttpEventType.UploadProgress) return;
+    private toCreateRequest(metadata: MovieMetadata): CreateMovieRequest {
+        const { id, ...request } = metadata;
+        return request;
+    }
+
+    private handleUploadEvent(uploadId: string, event: UploadHttpEvent): void {        if (event.type !== HttpEventType.UploadProgress) return;
 
         const percent = Math.round((100 * event.loaded) / (event.total ?? 1));
 
