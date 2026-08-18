@@ -172,7 +172,9 @@ export class UploadFacade {
             .create(metadata.title)
             .pipe(
                 switchMap((created) =>
-                    this.movieProviderService.enrich(created.id, metadata).pipe(map(() => created)),
+                    this.movieProviderService
+                        .enrich(created.id, metadata.id)
+                        .pipe(map(() => created)),
                 ),
                 switchMap((created) =>
                     this.uploadApiService.getCredentials(file).pipe(

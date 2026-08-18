@@ -13,16 +13,12 @@ import {
     tap,
 } from 'rxjs';
 import { MovieProviderService } from '@features/movies/services/movie-provider.service';
-import { MovieSummary } from '@features/movies/models/the-movie-db';
+import { EnrichmentSearchResult } from '@features/movies/models/enrichment';
 import { MovieMetadata } from '@features/uploads/models/movie-metadata';
 
 const MIN_QUERY_LENGTH = 2;
 const SEARCH_DEBOUNCE_MS = 300;
 const CACHE_MAX_ENTRIES = 100;
-const TMDB_IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
-
-const withPosterUrl = (movie: MovieSummary): MovieSummary =>
-    movie.poster_path ? { ...movie, poster_path: `${TMDB_IMAGE_URL}${movie.poster_path}` } : movie;
 
 @Component({
     selector: 'app-movie-search-modal',
@@ -34,13 +30,13 @@ export class MovieSearchModal {
     private readonly movieProviderService: MovieProviderService = inject(MovieProviderService);
 
     private readonly searchSubject = new Subject<string>();
-    private readonly cache = new Map<string, MovieSummary[]>();
+    private readonly cache = new Map<string, EnrichmentSearchResult[]>();
 
     isOpen = model(false);
     movieSelected = output<MovieMetadata>();
 
     readonly query = signal('');
-    readonly results = signal<MovieSummary[]>([]);
+    readonly results = signal<EnrichmentSearchResult[]>([]);
     readonly searching = signal(false);
 
     readonly showNoResults = computed(
@@ -64,27 +60,25 @@ export class MovieSearchModal {
         this.searchSubject.next(value);
     }
 
-    selectMovie(movie: MovieSummary): void {
+    selectMovie(movie: EnrichmentSearchResult): void {
         lastValueFrom(
-            this.movieProviderService.enrichmentPreview(movie.id).pipe(
-                map((details) => ({
-                    id: details.id,
-                    release_date: details.release_date,
-                    genres: details.genres.map((genre) => genre.name),
-                    originalTitle: details.original_title,
-                    duration: `${details.runtime} min`,
+            this.movieProviderService.enrichmentPreview(movie.tmdb_id).pipe(
+                map((preview) => ({
+                    id: preview.tmdb_id,
+                    title: preview.title,
+                    originalTitle: preview.originalTitle,
+                    year: preview.year,
+                    genres: preview.genres,
+                    popularity: preview.popularity,
+                    duration: preview.duration,
+                    director: preview.director,
+                    cast: preview.cast,
+                    overview: preview.overview,
+                    poster_path: preview.poster_path,
+                    release_date: preview.release_date,
+                    country: preview.country,
+                    language: preview.language,
                     awards: [],
-                    cast: [],
-                    country: '',
-                    director: '',
-                    language: details.original_language,
-                    overview: details.overview,
-                    popularity: details.popularity,
-                    poster_path: details.poster_path
-                        ? `${TMDB_IMAGE_URL}${details.poster_path}`
-                        : null,
-                    title: details.title,
-                    year: new Date(details.release_date).getFullYear(),
                 })),
             ),
         )
@@ -117,7 +111,6 @@ export class MovieSearchModal {
         this.searching.set(true);
 
         return this.movieProviderService.enrichmentSearch(query).pipe(
-            map((page) => page.results.map(withPosterUrl)),
             tap((movies) => {
                 this.setCache(query, movies);
                 this.results.set(movies);
@@ -131,7 +124,7 @@ export class MovieSearchModal {
         );
     }
 
-    private setCache(query: string, movies: MovieSummary[]): void {
+    private setCache(query: string, movies: EnrichmentSearchResult[]): void {
         this.cache.set(query, movies);
 
         if (this.cache.size > CACHE_MAX_ENTRIES) {
