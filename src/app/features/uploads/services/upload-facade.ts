@@ -1,6 +1,18 @@
 import { inject, Injectable, computed, signal } from '@angular/core';
-import { HttpEventType } from '@angular/common/http';
-import { Observable, EMPTY, Subscription, catchError, filter, map, switchMap, tap } from 'rxjs';
+import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
+import {
+    Observable,
+    EMPTY,
+    Subscription,
+    catchError,
+    filter,
+    map,
+    retry,
+    switchMap,
+    tap,
+    throwError,
+    timer,
+} from 'rxjs';
 import { ACTIVE_UPLOAD_STATES, UploadTask } from '@features/uploads/models/upload-task';
 import { MovieMetadata } from '@features/uploads/models/movie-metadata';
 import { UploadSessionDto } from '@features/uploads/models/upload-response';
@@ -235,6 +247,13 @@ export class UploadFacade {
 
                 switchMap((currentSession) =>
                     this.uploadApiService.completeUploadSession(currentSession.uploadId).pipe(
+                        retry({
+                            count: 4,
+                            delay: (error, attempt) =>
+                                error instanceof HttpErrorResponse && error.status === 409
+                                    ? timer(300 * attempt)
+                                    : throwError(() => error),
+                        }),
                         tap(() => {
                             if (this.isCurrent(uploadId, version)) {
                                 this.updateSessionStage(uploadId, 'confirming', movieId);
@@ -300,6 +319,13 @@ export class UploadFacade {
         }
 
         return this.uploadApiService.completeUploadSession(sessionId).pipe(
+            retry({
+                count: 4,
+                delay: (error, attempt) =>
+                    error instanceof HttpErrorResponse && error.status === 409
+                        ? timer(300 * attempt)
+                        : throwError(() => error),
+            }),
             tap(() => {
                 if (this.isCurrent(uploadId, version)) {
                     this.updateSessionStage(uploadId, 'confirming', movieId);
