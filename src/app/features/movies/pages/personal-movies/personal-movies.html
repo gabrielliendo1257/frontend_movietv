@@ -102,7 +102,7 @@
                 [title]="movie.title"
                 [posterUrl]="posterUrl(movie)"
                 [rating]="movie.popularity"
-                [year]="movie.release_date.slice(0, 4)"
+                [year]="movie.release_date?.slice(0, 4)"
                 [link]="'/watch/' + movie.id"
             ></app-card-movie-ui>
         }

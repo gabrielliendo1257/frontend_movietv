@@ -5,6 +5,14 @@ import { environment } from '../../../../environments/environment';
 import { WebMovie } from '@features/movies/models/web-movie';
 import { EnrichmentPreview, EnrichmentSearchResult } from '@features/movies/models/enrichment';
 
+interface WebMovieWire extends Omit<WebMovie, 'objectId'> {
+    object_id?: number | null;
+}
+
+function toWebMovie(wire: WebMovieWire): WebMovie {
+    return { ...wire, objectId: wire.object_id ?? null };
+}
+
 @Injectable({
     providedIn: 'root',
 })
@@ -13,22 +21,26 @@ export class MovieProviderService {
     private readonly baseUrl = environment.backendAddress + '/web/movies';
 
     list(limit = 50): Observable<WebMovie[]> {
-        return this.http.get<WebMovie[]>(this.baseUrl, {
-            params: { limit: String(limit) },
-            withCredentials: true,
-        });
+        return this.http
+            .get<WebMovieWire[]>(this.baseUrl, {
+                params: { limit: String(limit) },
+                withCredentials: true,
+            })
+            .pipe(map((movies) => movies.map(toWebMovie)));
     }
 
     findById(movieId: number): Observable<WebMovie> {
         return this.http
-            .get<{ movie: WebMovie }>(`${this.baseUrl}/${movieId}`, {
+            .get<{ movie: WebMovieWire }>(`${this.baseUrl}/${movieId}`, {
                 withCredentials: true,
             })
-            .pipe(map((response) => response.movie));
+            .pipe(map((response) => toWebMovie(response.movie)));
     }
 
     create(title: string): Observable<WebMovie> {
-        return this.http.post<WebMovie>(this.baseUrl, { title }, { withCredentials: true });
+        return this.http
+            .post<WebMovieWire>(this.baseUrl, { title }, { withCredentials: true })
+            .pipe(map(toWebMovie));
     }
 
     enrichmentSearch(query: string): Observable<EnrichmentSearchResult[]> {
