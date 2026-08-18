@@ -10,7 +10,7 @@ const DRAFT_FILE_KEY = 'draft-file';
 export interface PendingUpload {
     session: UploadSessionDto;
     fileName: string;
-    stage: 'uploading' | 'confirming';
+    stage: 'uploading' | 'closing_session' | 'confirming';
     metadata: MovieMetadata;
     movieId?: number;
 }

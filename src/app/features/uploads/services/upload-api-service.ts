@@ -23,7 +23,6 @@ export class UploadApiService {
 
         return this.http.post<UploadSessionDto>(this.uploadsUrl, request, {
             headers: {
-                //'Content-Type': 'application/json',
                 accept: 'application/json',
             },
             withCredentials: true,
@@ -31,6 +30,16 @@ export class UploadApiService {
     }
 
     uploadToStorage(file: File, session: UploadSessionDto): Observable<UploadHttpEvent> {
+        if (session.method === 'POST') {
+            const form = new FormData();
+            form.append('file', file);
+
+            return this.http.post<unknown>(session.uploadUrl, form, {
+                reportProgress: true,
+                observe: 'events',
+            });
+        }
+
         return this.http.put<unknown>(session.uploadUrl, file, {
             headers: {
                 'Content-Type': session.object.expectedMime,
@@ -40,11 +49,17 @@ export class UploadApiService {
         });
     }
 
+    completeUploadSession(uploadId: string): Observable<unknown> {
+        return this.http.post(`${this.uploadsUrl}/${uploadId}/complete`, null, {
+            withCredentials: true,
+        });
+    }
+
     confirmMovieComplete(movieId: number, storageId: string, sizeBytes: number): Observable<unknown> {
         return this.http.post(
             `${environment.backendAddress}/web/movies/${movieId}/complete`,
             {
-                storageId: Number(storageId),
+                storageId,
                 sizeBytes,
             },
             { withCredentials: true },

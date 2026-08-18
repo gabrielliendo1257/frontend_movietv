@@ -7,7 +7,6 @@ import { UploadSessionDto } from '@features/uploads/models/upload-response';
 import { PendingUpload, UploadSessionPersistence } from '@features/uploads/services/upload-session-persistence';
 import { UploadApiService, UploadHttpEvent } from '@features/uploads/services/upload-api-service';
 import { MovieProviderService } from '@features/movies/services/movie-provider.service';
-import { CreateMovieRequest } from '@features/movies/models/web-movie';
 import { MovieStreamStore } from '@features/movies/services/movie-stream-store';
 
 @Injectable({
@@ -142,35 +141,18 @@ export class UploadFacade {
 
                 this.updateTask(uploadId, { file, state: 'uploading' });
 
-                if (pending.stage === 'confirming') {
-                    this.updateTask(uploadId, { state: 'confirming' });
-
-                    if (!pending.movieId) {
-                        this.failTask(uploadId, 'Upload session expired.');
-                        return;
-                    }
-
-                    this.uploadApiService
-                        .confirmMovieComplete(pending.movieId, uploadId, file.size)
-                        .subscribe({
-                            next: () => {
-                                if (this.isCurrent(uploadId, version)) {
-                                    this.finishTask(uploadId, version);
-                                }
-                            },
-                            error: (error) => {
-                                if (this.isCurrent(uploadId, version)) {
-                                    this.failTask(uploadId, error);
-                                }
-                            },
-                        });
+                if (!pending.movieId) {
+                    this.failTask(uploadId, 'Upload session expired.');
                     return;
                 }
 
-                this.trackSubscription(
-                    uploadId,
-                    this.uploadAndConfirm(uploadId, file, pending.session, pending.metadata, version).subscribe(),
-                );
+                this.closeAndConfirm(uploadId, file, pending, version).subscribe({
+                    error: (error) => {
+                        if (this.isCurrent(uploadId, version)) {
+                            this.failTask(uploadId, error);
+                        }
+                    },
+                });
             })
             .catch(() => {
                 if (!this.isCurrent(uploadId, version)) return;
@@ -186,10 +168,18 @@ export class UploadFacade {
         metadata: MovieMetadata,
         version: number,
     ): void {
-        const subscription = this.uploadApiService
-            .getCredentials(file)
+        const subscription = this.movieProviderService
+            .create(metadata.title)
             .pipe(
-                tap((session) => {
+                switchMap((created) =>
+                    this.movieProviderService.enrich(created.id, metadata).pipe(map(() => created)),
+                ),
+                switchMap((created) =>
+                    this.uploadApiService.getCredentials(file).pipe(
+                        map((session) => ({ created, session })),
+                    ),
+                ),
+                tap(({ session }) => {
                     if (!this.isCurrent(uploadId, version)) return;
 
                     this.updateTask(uploadId, {
@@ -197,23 +187,10 @@ export class UploadFacade {
                         storageKey: session.storageKey,
                         state: 'uploading',
                     });
-
-                    const pending: PendingUpload = {
-                        session,
-                        fileName: file.name,
-                        stage: 'uploading',
-                        metadata,
-                    };
-
-                    this.persistence.saveSession(pending);
-                    void this.persistence.saveFile(session.uploadId, file).catch(() => undefined);
                 }),
-
-                switchMap((session) => {
-                    if (!this.isCurrent(uploadId, version)) return EMPTY;
-
-                    return this.uploadAndConfirm(uploadId, file, session, metadata, version);
-                }),
+                switchMap(({ created, session }) =>
+                    this.uploadAndConfirm(uploadId, file, session, created.id, version),
+                ),
             )
             .subscribe({
                 error: (error) => {
@@ -230,7 +207,7 @@ export class UploadFacade {
         uploadId: string,
         file: File,
         session: UploadSessionDto,
-        metadata: MovieMetadata,
+        movieId: number,
         version: number,
     ): Observable<unknown> {
         return this.uploadApiService
@@ -249,29 +226,32 @@ export class UploadFacade {
                     if (!this.isCurrent(uploadId, version)) return;
 
                     this.updateTask(uploadId, { state: 'confirming' });
-                    this.updateSessionStage(uploadId, 'confirming');
+                    this.updateSessionStage(uploadId, 'closing_session', movieId);
+
+                    this.movieStreamStore.setMovie(movieId, session.uploadId);
                 }),
 
                 switchMap((currentSession) =>
-                    this.movieProviderService.create(this.toCreateRequest(metadata)).pipe(
-                        tap((created) => {
+                    this.uploadApiService.completeUploadSession(currentSession.uploadId).pipe(
+                        tap(() => {
                             if (this.isCurrent(uploadId, version)) {
-                                this.movieStreamStore.setMovie(created.id, currentSession.uploadId);
-                                this.updateSessionStage(uploadId, 'confirming', created.id);
+                                this.updateSessionStage(uploadId, 'confirming', movieId);
                             }
                         }),
-                        switchMap((created) =>
-                            this.uploadApiService
-                                .confirmMovieComplete(created.id, currentSession.uploadId, file.size)
-                                .pipe(
-                                    tap(() => {
-                                        if (this.isCurrent(uploadId, version)) {
-                                            this.updateTask(uploadId, { state: 'persisting' });
-                                        }
-                                    }),
-                                ),
-                        ),
+                        map(() => currentSession),
                     ),
+                ),
+
+                switchMap((currentSession) =>
+                    this.uploadApiService
+                        .confirmMovieComplete(movieId, currentSession.uploadId, file.size)
+                        .pipe(
+                            tap(() => {
+                                if (this.isCurrent(uploadId, version)) {
+                                    this.updateTask(uploadId, { state: 'persisting' });
+                                }
+                            }),
+                        ),
                 ),
 
                 tap(() => {
@@ -289,12 +269,46 @@ export class UploadFacade {
             );
     }
 
-    private toCreateRequest(metadata: MovieMetadata): CreateMovieRequest {
-        const { id, ...request } = metadata;
-        return request;
+    private closeAndConfirm(
+        uploadId: string,
+        file: File,
+        pending: PendingUpload,
+        version: number,
+    ): Observable<unknown> {
+        const sessionId = pending.session.uploadId;
+        const movieId = pending.movieId;
+
+        const confirm = () =>
+            this.uploadApiService.confirmMovieComplete(movieId as number, sessionId, file.size).pipe(
+                tap(() => {
+                    if (this.isCurrent(uploadId, version)) {
+                        this.finishTask(uploadId, version);
+                    }
+                }),
+                catchError((error) => {
+                    if (this.isCurrent(uploadId, version)) {
+                        this.failTask(uploadId, error);
+                    }
+                    return EMPTY;
+                }),
+            );
+
+        if (pending.stage === 'confirming') {
+            return confirm();
+        }
+
+        return this.uploadApiService.completeUploadSession(sessionId).pipe(
+            tap(() => {
+                if (this.isCurrent(uploadId, version)) {
+                    this.updateSessionStage(uploadId, 'confirming', movieId);
+                }
+            }),
+            switchMap(() => confirm()),
+        );
     }
 
-    private handleUploadEvent(uploadId: string, event: UploadHttpEvent): void {        if (event.type !== HttpEventType.UploadProgress) return;
+    private handleUploadEvent(uploadId: string, event: UploadHttpEvent): void {
+        if (event.type !== HttpEventType.UploadProgress) return;
 
         const percent = Math.round((100 * event.loaded) / (event.total ?? 1));
 
@@ -323,7 +337,7 @@ export class UploadFacade {
 
     private updateSessionStage(
         uploadId: string,
-        stage: 'uploading' | 'confirming',
+        stage: 'uploading' | 'closing_session' | 'confirming',
         movieId?: number,
     ): void {
         const pending = this.persistence.loadSession();
