@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -10,6 +10,8 @@ import { ToastService } from '@core/services/toast.service';
 import { UploadDrawer } from '@features/uploads/components/upload-drawer/upload-drawer';
 import { UploadFacade } from '@features/uploads/services/upload-facade';
 import { TmdbService } from '@features/movies/services/tmdb.service';
+import { HomeService } from '@features/account/services/home.service';
+import { HomeView } from '@features/account/models/home';
 
 @Component({
     selector: 'app-public-layout',
@@ -23,10 +25,23 @@ export class PublicLayout {
     private readonly uploadFacade = inject(UploadFacade);
     private readonly router = inject(Router);
     private readonly toastService = inject(ToastService);
+    private readonly homeService = inject(HomeService);
 
     readonly uploadsDrawerOpen = signal(false);
 
     readonly activeUploads = computed(() => this.uploadFacade.activeCount());
+
+    readonly home = signal<HomeView | null>(null);
+
+    readonly navUser = computed<NavUser | null>(() => {
+        const profile = this.home()?.profile;
+        if (!profile) return null;
+        return {
+            username: profile.username,
+            email: profile.email,
+            picture: null,
+        };
+    });
 
     readonly activeRoute = toSignal(
         this.router.events.pipe(
@@ -37,6 +52,19 @@ export class PublicLayout {
         { initialValue: this.router.url },
     );
 
+    constructor() {
+        effect(() => {
+            if (this.authService.isLogged()) {
+                this.homeService.getHome().subscribe({
+                    next: (home) => this.home.set(home),
+                    error: () => this.home.set(null),
+                });
+            } else {
+                this.home.set(null);
+            }
+        });
+    }
+
     onNavClick(route: string): void {
         this.router.navigate([route]);
     }
@@ -45,20 +73,16 @@ export class PublicLayout {
         this.toastService.info('Las notificaciones llegan pronto.');
     }
 
-    // TODO(BFF): reemplazar por el perfil de GET /web/home (profile: {id, username, email, plan, enabled})
-    // cuando la feature home del BFF se consuma desde el frontend.
-    navUser: NavUser | null = {
-        username: 'Admin',
-        picture: 'https://cdn.pixabay.com/photo/2017/03/24/07/28/facebook-2170419_1280.png',
-        email: 'admin@gmail.com',
-    };
-
     startLogin(): void {
         this.authService.startLoginFlow();
     }
 
     logout() {
         this.authService.logout();
+    }
+
+    onProfileClick(): void {
+        this.router.navigate(['/account']);
     }
 
     onSearch(search: string): void {

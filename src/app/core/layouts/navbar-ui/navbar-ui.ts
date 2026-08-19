@@ -46,6 +46,8 @@ export class NavbarUi {
             ],
         },
         { label: 'Upload', route: '/uploads' },
+        { label: 'Bibliotecas', route: '/libraries' },
+        { label: 'Mi cuenta', route: '/account' },
     ]);
 
     logoClick = output<void>();

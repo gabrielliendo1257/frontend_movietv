@@ -1,12 +1,13 @@
 @if (authService.isLogged()) {
     <app-navbar-ui
-        [user]="navUser"
+        [user]="navUser()"
         [uploadCount]="activeUploads()"
         [activeRoute]="activeRoute()"
         (navClick)="onNavClick($event)"
         (logoClick)="onNavClick('/movies')"
         (uploadClick)="uploadsDrawerOpen.set(true)"
         (notificationsClick)="onNotificationsClick()"
+        (profileClick)="onProfileClick()"
         (searchSubmit)="onSearch($event)"
         (logoutClick)="logout()"
     ></app-navbar-ui>

@@ -1,0 +1,79 @@
+<section class="account-page">
+    <h1 class="page-title">Mi cuenta</h1>
+
+    @if (!isLogged()) {
+        <div class="empty-state">
+            <p>Inicia sesión para ver tu cuenta.</p>
+        </div>
+    } @else if (loading()) {
+        <p class="muted">Cargando...</p>
+    } @else if (error() || !home()) {
+        <div class="empty-state">
+            <p>No se pudo cargar la información de tu cuenta.</p>
+            <button class="btn" (click)="load()">Reintentar</button>
+        </div>
+    } @else {
+        @let homeView = home()!;
+        <div class="account-grid">
+            <div class="card profile-card">
+                <h2>Perfil</h2>
+                <div class="profile-avatar">{{ homeView.profile.username[0].toUpperCase() }}</div>
+                <dl class="profile-fields">
+                    <dt>Usuario</dt>
+                    <dd>{{ homeView.profile.username }}</dd>
+                    <dt>Email</dt>
+                    <dd>{{ homeView.profile.email }}</dd>
+                    <dt>Plan</dt>
+                    <dd><span class="badge">{{ homeView.profile.plan }}</span></dd>
+                    <dt>Estado</dt>
+                    <dd>
+                        <span class="badge" [class.bad]="!homeView.profile.enabled || homeView.profile.blocked">
+                            {{ homeView.profile.blocked ? 'bloqueado' : homeView.profile.enabled ? 'activo' : 'deshabilitado' }}
+                        </span>
+                    </dd>
+                    <dt>Violaciones</dt>
+                    <dd>{{ homeView.profile.violations }}</dd>
+                </dl>
+            </div>
+
+            <div class="card quota-card">
+                <h2>Almacenamiento</h2>
+                <div class="quota-bar">
+                    <div class="quota-fill" [style.width.%]="quotaPercent(homeView.quota.usedBytes, homeView.quota.quotaBytes)"></div>
+                </div>
+                <p class="quota-text">
+                    {{ formatBytes(homeView.quota.usedBytes) }} de {{ formatBytes(homeView.quota.quotaBytes) }} usados
+                    ({{ formatBytes(homeView.quota.remainingBytes) }} libres)
+                </p>
+            </div>
+        </div>
+
+        <div class="card uploads-card">
+            <h2>Subidas recientes</h2>
+            @if (homeView.recentUploads.length === 0) {
+                <p class="muted">Todavía no tienes subidas.</p>
+            } @else {
+                <table class="uploads-table">
+                    <thead>
+                        <tr>
+                            <th>Archivo</th>
+                            <th>Tamaño</th>
+                            <th>Estado</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (upload of homeView.recentUploads; track upload.storageId) {
+                            <tr>
+                                <td class="object-key">{{ upload.objectKey }}</td>
+                                <td>{{ formatBytes(upload.sizeInBytes) }}</td>
+                                <td><span class="badge">{{ upload.status }}</span></td>
+                                <td>{{ upload.createdAt }}</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    }
+</section>

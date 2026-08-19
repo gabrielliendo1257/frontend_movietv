@@ -33,6 +33,11 @@ export const routes: Routes = [
                 path: 'libraries',
                 loadComponent: () =>
                     import('./features/libraries/pages/libraries-page/libraries-page').then(m => m.LibrariesPage),
+            },
+            {
+                path: 'account',
+                loadComponent: () =>
+                    import('./features/account/pages/account-page/account-page').then(m => m.AccountPage),
             }
         ]
     },
