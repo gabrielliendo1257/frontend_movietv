@@ -28,6 +28,11 @@ export const routes: Routes = [
             {
                 path: 'uploads',
                 loadChildren: () => import('./features/uploads/routes').then(m => m.UPLOAD_ROUTES),
+            },
+            {
+                path: 'libraries',
+                loadComponent: () =>
+                    import('./features/libraries/pages/libraries-page/libraries-page').then(m => m.LibrariesPage),
             }
         ]
     },

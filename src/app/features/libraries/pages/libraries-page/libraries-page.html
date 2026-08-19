@@ -1,0 +1,151 @@
+<section class="libraries-page">
+    <h1 class="page-title">Bibliotecas</h1>
+
+    @if (!isLogged()) {
+        <div class="empty-state">
+            <p>Inicia sesión para gestionar las bibliotecas del media server.</p>
+        </div>
+    } @else {
+        <div class="register-bar">
+            <input
+                class="root-path-input"
+                type="text"
+                placeholder="/ruta/a/tu/biblioteca"
+                [ngModel]="rootPath()"
+                (ngModelChange)="rootPath.set($event)"
+                (keydown.enter)="register()"
+            />
+            <button class="btn btn-primary" (click)="register()" [disabled]="registering()">
+                {{ registering() ? 'Registrando...' : 'Registrar biblioteca' }}
+            </button>
+        </div>
+
+        @if (loading()) {
+            <p class="muted">Cargando bibliotecas...</p>
+        } @else if (libraries().length === 0) {
+            <div class="empty-state">
+                <p>No hay bibliotecas registradas todavía.</p>
+            </div>
+        } @else {
+            <div class="libraries-grid">
+                @for (library of libraries(); track library.id) {
+                    <div class="library-card">
+                        <div class="library-head">
+                            <span class="library-type">{{ library.type }}</span>
+                            <span class="library-status" [class.off]="!library.enabled">
+                                {{ library.enabled ? 'habilitada' : 'deshabilitada' }}
+                            </span>
+                        </div>
+                        <h3 class="library-title">Biblioteca #{{ library.id }}</h3>
+                        <div class="library-actions">
+                            <button class="btn" (click)="openScan(library)">Escanear</button>
+                            <button class="btn" (click)="openUnidentified(library)">Sin identificar</button>
+                            <button class="btn btn-danger" (click)="delete(library)">Eliminar</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (selected(); as library) {
+            <div class="assets-panel">
+                <div class="assets-head">
+                    <h2>{{ selectedName() }}</h2>
+                    <div class="tabs">
+                        <button class="tab" [class.active]="mode() === 'scan'" (click)="openScan(library)">
+                            Assets ({{ assetsTotal() }})
+                        </button>
+                        <button class="tab" [class.active]="mode() === 'unidentified'" (click)="openUnidentified(library)">
+                            Sin identificar
+                        </button>
+                    </div>
+                </div>
+
+                @if (loadingAssets()) {
+                    <p class="muted">Escaneando...</p>
+                } @else if (assets().length === 0) {
+                    <p class="muted">Sin resultados.</p>
+                } @else {
+                    <div class="asset-list">
+                        @for (asset of assets(); track asset.id) {
+                            <div class="asset-row">
+                                <div class="asset-info">
+                                    <span class="asset-path">{{ asset.relativePath }}</span>
+                                    <span class="asset-meta">
+                                        {{ formatSize(asset.size) }} · {{ asset.mimeType }}
+                                    </span>
+                                    <span class="asset-status" [class.ok]="asset.status === 'IDENTIFIED'">
+                                        {{ asset.status }}
+                                    </span>
+                                    @if (asset.movieId) {
+                                        <span class="asset-movie">movie #{{ asset.movieId }}</span>
+                                    }
+                                </div>
+
+                                @if (asset.status === 'UNIDENTIFIED') {
+                                    @if (identifyAssetId() === asset.id) {
+                                        <div class="identify-box">
+                                            <input
+                                                class="identify-input"
+                                                type="text"
+                                                placeholder="Buscar en TMDB..."
+                                                [ngModel]="identifyQuery()"
+                                                (ngModelChange)="onIdentifyQuery($event)"
+                                                (keydown.enter)="identifyWithTitle(asset)"
+                                            />
+                                            <button
+                                                class="btn btn-primary"
+                                                (click)="identifyWithTitle(asset)"
+                                                [disabled]="identifying()"
+                                            >
+                                                {{ identifying() ? 'Identificando...' : 'Identificar' }}
+                                            </button>
+                                            @if (identifyResults().length) {
+                                                <ul class="identify-results">
+                                                    @for (result of identifyResults(); track result.tmdb_id) {
+                                                        <li (click)="identifyWithResult(asset, result)">
+                                                            {{ result.title }}
+                                                            @if (result.year) {
+                                                                <span class="muted">({{ result.year }})</span>
+                                                            }
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            }
+                                        </div>
+                                    } @else {
+                                        <button class="btn" (click)="identifyAssetId.set(asset.id)">
+                                            Identificar
+                                        </button>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    @if (assetsTotalPages() > 1) {
+                        <div class="pager">
+                            <button
+                                class="btn"
+                                [disabled]="assetsPage() === 0"
+                                (click)="changePage(-1)"
+                            >
+                                ← Anterior
+                            </button>
+                            <span class="muted">
+                                Página {{ assetsPage() + 1 }} de {{ assetsTotalPages() }}
+                            </span>
+                            <button
+                                class="btn"
+                                [disabled]="assetsPage() + 1 >= assetsTotalPages()"
+                                (click)="changePage(1)"
+                            >
+                                Siguiente →
+                            </button>
+                        </div>
+                    }
+                }
+            </div>
+        }
+    }
+</section>
