@@ -1,1 +1,71 @@
-<p>movie-detail works!</p>
+<section class="movie-detail">
+    @if (loading()) {
+        <p class="muted">Cargando película...</p>
+    } @else {
+        @let m = movie()!;
+        @if (notFound() || !m) {
+            <div class="empty-state">
+                <p>Película no encontrada.</p>
+            </div>
+        } @else {
+            <div class="detail-grid">
+                @if (m.poster_path) {
+                    <img
+                        class="detail-poster"
+                        [src]="m.poster_path.startsWith('http') ? m.poster_path : 'https://image.tmdb.org/t/p/w500' + m.poster_path"
+                        [alt]="m.title"
+                    />
+                }
+
+                <div class="detail-info">
+                    <h1 class="detail-title">{{ m.title }}</h1>
+                    @if (m.year) {
+                        <p class="muted">{{ m.year }}</p>
+                    }
+                    <div class="meta-row">
+                        <span class="badge">{{ m.status }}</span>
+                        <span class="badge">{{ visibilityLabel(visibility()) }}</span>
+                    </div>
+                    @if (m.overview) {
+                        <p class="overview">{{ m.overview }}</p>
+                    }
+
+                <div class="visibility-card">
+                    <h2>Visibilidad</h2>
+                    <p class="muted">Quién puede ver esta película en la plataforma.</p>
+                    <div class="visibility-options">
+                        @for (option of visibilityOptions; track option) {
+                            <button
+                                class="visibility-option"
+                                [class.active]="visibility() === option"
+                                [disabled]="saving()"
+                                (click)="onVisibilityChange(option)"
+                            >
+                                {{ visibilityLabel(option) }}
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="shares-card">
+                    <h2>Compartir con usuarios</h2>
+                    <p class="muted">Usuarios separados por coma (visibilidad compartida).</p>
+                    <div class="shares-row">
+                        <input
+                            class="shares-input"
+                            type="text"
+                            placeholder="javier, maria..."
+                            [ngModel]="sharesInput()"
+                            (ngModelChange)="sharesInput.set($event)"
+                            (keydown.enter)="saveShares()"
+                        />
+                        <button class="btn btn-primary" (click)="saveShares()" [disabled]="saving()">
+                            {{ saving() ? 'Guardando...' : 'Compartir' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
+    }
+</section>
