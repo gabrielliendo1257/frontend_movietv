@@ -46,6 +46,17 @@ export class LibrariesPage {
     readonly identifyResults = signal<EnrichmentSearchResult[]>([]);
     readonly identifying = signal(false);
 
+    readonly movieTitles = signal<Record<number, string>>({});
+
+    assetLabel(movieId: number | null, relativePath: string): string {
+        const title = movieId != null ? this.movieTitles()[movieId] : undefined;
+        return title ?? relativePath;
+    }
+
+    hasTitle(movieId: number | null): boolean {
+        return movieId != null && !!this.movieTitles()[movieId];
+    }
+
     readonly selectedName = computed(() => {
         const selected = this.selected();
         return selected ? `Biblioteca #${selected.id} (${selected.type})` : '';
@@ -137,6 +148,7 @@ export class LibrariesPage {
                 this.assetsPage.set(result.page);
                 this.assetsTotalPages.set(result.totalPages);
                 this.loadingAssets.set(false);
+                this.loadMovieTitles(result.items);
             },
             error: () => {
                 this.loadingAssets.set(false);
@@ -154,6 +166,7 @@ export class LibrariesPage {
                 this.assetsPage.set(result.page);
                 this.assetsTotalPages.set(result.totalPages);
                 this.loadingAssets.set(false);
+                this.loadMovieTitles(result.items);
             },
             error: () => {
                 this.loadingAssets.set(false);
@@ -216,6 +229,21 @@ export class LibrariesPage {
                 this.toast.error('No se pudo identificar el asset');
             },
         });
+    }
+
+    private loadMovieTitles(assets: MediaAsset[]): void {
+        const known = this.movieTitles();
+        const missing = new Set<number>();
+        for (const asset of assets) {
+            if (asset.movieId != null && !known[asset.movieId]) missing.add(asset.movieId);
+        }
+        for (const movieId of missing) {
+            this.movieProviderService.findById(movieId).subscribe({
+                next: (movie) =>
+                    this.movieTitles.set({ ...this.movieTitles(), [movieId]: movie.title }),
+                error: () => undefined,
+            });
+        }
     }
 
     formatSize(bytes: number): string {

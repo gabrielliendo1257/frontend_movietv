@@ -70,10 +70,17 @@
                         @for (asset of assets(); track asset.id) {
                             <div class="asset-row">
                                 <div class="asset-info">
-                                    <span class="asset-path">{{ asset.relativePath }}</span>
-                                    <span class="asset-meta">
-                                        {{ formatSize(asset.size) }} · {{ asset.mimeType }}
-                                    </span>
+                                    @if (hasTitle(asset.movieId)) {
+                                        <span class="asset-path asset-title">{{ movieTitles()[asset.movieId ?? -1] }}</span>
+                                        <span class="asset-meta">
+                                            {{ asset.relativePath }} · {{ formatSize(asset.size) }} · {{ asset.mimeType }}
+                                        </span>
+                                    } @else {
+                                        <span class="asset-path">{{ asset.relativePath }}</span>
+                                        <span class="asset-meta">
+                                            {{ formatSize(asset.size) }} · {{ asset.mimeType }}
+                                        </span>
+                                    }
                                     <span class="asset-status" [class.ok]="asset.status === 'IDENTIFIED'">
                                         {{ asset.status }}
                                     </span>

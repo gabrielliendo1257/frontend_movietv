@@ -212,6 +212,10 @@
     word-break: break-all;
 }
 
+.asset-title {
+    font-weight: 600;
+}
+
 .asset-meta {
     color: var(--color-text);
     opacity: 0.6;
