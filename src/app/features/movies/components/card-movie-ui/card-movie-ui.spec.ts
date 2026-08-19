@@ -14,6 +14,7 @@ describe('CardMovieUi', () => {
 
     fixture = TestBed.createComponent(CardMovieUi);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('title', 'Test Movie');
     fixture.detectChanges();
   });
 

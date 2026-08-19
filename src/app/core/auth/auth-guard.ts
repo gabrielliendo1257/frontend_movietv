@@ -1,14 +1,15 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanMatchFn, Router } from '@angular/router';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { AuthService } from '@core/services/auth.service';
 import { filter, map, take } from 'rxjs';
 
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanMatchFn = (_route, segments) => {
     const authService = inject(AuthService);
     const router = inject(Router);
 
+    const attemptedUrl = `/${segments.map((segment) => segment.path).join('/')}`;
     const status = authService.status();
     console.log("Executing authGuard (status): ", status)
 
@@ -16,11 +17,11 @@ export const authGuard: CanActivateFn = () => {
         return toObservable(authService.status).pipe(
             filter(s => s !== 'loading'),
             take(1),
-            map(s => s === 'authenticated' ? true : router.createUrlTree(['/']))
+            map(s => s === 'authenticated' ? true : (authService.rememberReturnUrl(attemptedUrl), router.createUrlTree(['/'])))
         )
     }
 
     return status === 'authenticated'
         ? true
-        : router.createUrlTree(['/'])
+        : (authService.rememberReturnUrl(attemptedUrl), router.createUrlTree(['/']))
 }
