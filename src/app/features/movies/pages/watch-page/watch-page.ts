@@ -5,6 +5,7 @@ import { MovieProviderService } from '@features/movies/services/movie-provider.s
 import { StreamingService } from '@features/movies/services/streaming.service';
 import { MovieStreamStore } from '@features/movies/services/movie-stream-store';
 import { TmdbService } from '@features/movies/services/tmdb.service';
+import { environment } from '../../../../../environments/environment';
 import { WebMovie } from '@features/movies/models/web-movie';
 import { MovieDetails, MovieSummary } from '@features/movies/models/the-movie-db';
 import { VideoPlayer } from '@features/player/components/video-player/video-player';
@@ -120,6 +121,24 @@ export class WatchPage implements OnInit {
     }
 
     private resolveStreaming(movie: WebMovie): void {
+        this.streamingService.getStreamTicket(movie.id).subscribe({
+            next: (ticket) => {
+                if (!ticket.url) {
+                    this.fallbackStream(movie);
+                    return;
+                }
+                this.videoSrc.set(
+                    ticket.url.startsWith('http') ? ticket.url : environment.backendAddress + ticket.url,
+                );
+            },
+            error: (error: unknown) => {
+                console.error('Stream ticket unavailable, falling back', error);
+                this.fallbackStream(movie);
+            },
+        });
+    }
+
+    private fallbackStream(movie: WebMovie): void {
         const objectId = movie.objectId ?? this.movieStreamStore.getStorageId(movie.id);
         if (objectId == null) return;
 
