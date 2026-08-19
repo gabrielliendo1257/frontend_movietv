@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { WebMovie } from '@features/movies/models/web-movie';
+import { MovieVisibility, WebMovie } from '@features/movies/models/web-movie';
 import { EnrichmentPreview, EnrichmentSearchResult } from '@features/movies/models/enrichment';
 
 interface WebMovieWire extends Omit<WebMovie, 'objectId'> {
@@ -63,5 +63,17 @@ export class MovieProviderService {
             { tmdb_id: tmdbId },
             { withCredentials: true },
         );
+    }
+
+    setVisibility(movieId: number, visibility: MovieVisibility): Observable<WebMovie> {
+        return this.http
+            .post<WebMovieWire>(`${this.baseUrl}/${movieId}/visibility`, { visibility }, { withCredentials: true })
+            .pipe(map(toWebMovie));
+    }
+
+    setShares(movieId: number, usernames: string[]): Observable<WebMovie> {
+        return this.http
+            .post<WebMovieWire>(`${this.baseUrl}/${movieId}/shares`, { usernames }, { withCredentials: true })
+            .pipe(map(toWebMovie));
     }
 }

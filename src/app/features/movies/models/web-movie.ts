@@ -2,8 +2,11 @@ import { MovieMetadata } from '@features/uploads/models/movie-metadata';
 
 export type MovieStatus = 'DRAFT' | 'PUBLISHED';
 
+export type MovieVisibility = 'PUBLIC' | 'PRIVATE' | 'SHARED';
+
 export interface WebMovie extends MovieMetadata {
     status: MovieStatus;
+    visibility?: MovieVisibility;
     objectId?: number | null;
 }
 
