@@ -27,6 +27,7 @@ export class NavbarUi {
     searchQuery = model<string>('');
     activeRoute = input<string>('');
     links = input<NavLink[]>([
+        { label: 'Dashboard', route: '/dashboard' },
         { label: 'Home', route: '/movies' },
         {
             label: 'Movies',

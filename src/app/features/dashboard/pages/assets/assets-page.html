@@ -1,0 +1,35 @@
+<section class="assets">
+    <h1 class="page-title">Assets</h1>
+    <p class="muted">Archivos físicos de todas las bibliotecas.</p>
+
+    @if (loading()) {
+        <p class="muted">Cargando assets...</p>
+    } @else if (rows().length === 0) {
+        <p class="muted">No hay assets todavía.</p>
+    } @else {
+        <div class="table-wrap">
+            <table class="assets-table">
+                <thead>
+                    <tr>
+                        <th>Resource</th>
+                        <th>Size</th>
+                        <th>Status</th>
+                        <th>Library</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (asset of rows(); track asset.id) {
+                        <tr>
+                            <td class="col-resource">{{ asset.relativePath }}</td>
+                            <td>{{ formatSize(asset.size) }}</td>
+                            <td>
+                                <span class="status" [class.ok]="asset.status === 'IDENTIFIED'">{{ asset.status }}</span>
+                            </td>
+                            <td>#{{ asset.libraryId }}</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

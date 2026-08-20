@@ -1,0 +1,184 @@
+.overview {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 1000px;
+}
+
+.overview-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.page-title {
+    color: var(--color-heading);
+    font-size: 1.6rem;
+    margin: 0;
+}
+
+.btn {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-heading);
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    color: #ffffff;
+}
+
+.btn-sm {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.8rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.stat-card {
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stat-value {
+    color: var(--color-heading);
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.stat-label {
+    color: var(--color-muted);
+    font-size: 0.82rem;
+}
+
+.overview-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 800px) {
+    .overview-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.panel {
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.panel-title {
+    margin: 0;
+    color: var(--color-heading);
+    font-size: 1rem;
+}
+
+.muted {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+}
+
+.activity-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.88rem;
+}
+
+.activity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-success);
+    flex-shrink: 0;
+}
+
+.activity-dot.failed {
+    background: var(--color-danger);
+}
+
+.activity-text {
+    color: var(--color-text);
+    flex: 1;
+}
+
+.activity-when {
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.lib-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.lib-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+}
+
+.lib-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.lib-type {
+    color: var(--color-primary);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.lib-name {
+    color: var(--color-heading);
+    font-size: 0.9rem;
+}

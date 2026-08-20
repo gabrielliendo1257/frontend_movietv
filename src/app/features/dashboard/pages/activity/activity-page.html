@@ -1,0 +1,44 @@
+<section class="activity">
+    <h1 class="page-title">Activity</h1>
+
+    @if (uploads().length) {
+        <h2 class="section-title">Uploads</h2>
+        <div class="job-list">
+            @for (task of uploads(); track task.uploadId) {
+                <div class="job">
+                    <div class="job-head">
+                        <span class="job-text">Uploading {{ task.fileName }}</span>
+                        <span class="job-state" [class.failed]="task.state === 'error'" [class.done]="task.state === 'completed'">
+                            {{ uploadLabel(task.state) }}
+                        </span>
+                    </div>
+                    @if (task.state !== 'completed' && task.state !== 'error') {
+                        <div class="track">
+                            <div class="fill" [style.width.%]="task.progress"></div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    <h2 class="section-title">Jobs</h2>
+    <div class="job-list">
+        @for (job of mockJobs(); track job.id) {
+            <div class="job">
+                <div class="job-head">
+                    <span class="job-text">{{ job.text }}</span>
+                    <span class="job-state" [class.failed]="job.state === 'FAILED'" [class.done]="job.state === 'COMPLETED'">
+                        {{ job.state }}
+                    </span>
+                </div>
+                @if (job.progress != null) {
+                    <div class="track">
+                        <div class="fill" [style.width.%]="job.progress"></div>
+                        <span class="percent">{{ job.progress }}%</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>

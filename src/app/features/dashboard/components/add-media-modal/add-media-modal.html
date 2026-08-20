@@ -1,0 +1,32 @@
+@if (isOpen()) {
+    <div class="backdrop" (click)="close()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="header">
+                <h2 class="title">Add Media</h2>
+                <button class="close" (click)="close()">✕</button>
+            </div>
+
+            <p class="subtitle">Choose source</p>
+
+            <div class="sources">
+                <button class="source" (click)="choose('upload')">
+                    <span class="source-icon">↑</span>
+                    <span class="source-label">Upload</span>
+                    <span class="source-desc">Add media from your computer/storage</span>
+                </button>
+
+                <button class="source" (click)="choose('local')">
+                    <span class="source-icon">▤</span>
+                    <span class="source-label">Local Library</span>
+                    <span class="source-desc">Import media from an existing library</span>
+                </button>
+
+                <button class="source" (click)="choose('s3')">
+                    <span class="source-icon">☁</span>
+                    <span class="source-label">S3 / Storage</span>
+                    <span class="source-desc">Add media from object storage</span>
+                </button>
+            </div>
+        </div>
+    </div>
+}

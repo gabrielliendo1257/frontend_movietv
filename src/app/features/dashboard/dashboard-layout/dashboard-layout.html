@@ -1,0 +1,33 @@
+<div class="dash-shell">
+    <aside class="dash-sidebar">
+        <nav class="dash-nav">
+            @for (entry of nav; track entry.label) {
+                <a
+                    class="dash-link"
+                    [routerLink]="entry.route"
+                    routerLinkActive="active"
+                    [routerLinkActiveOptions]="{ exact: entry.route === '/dashboard' }"
+                >
+                    {{ entry.label }}
+                </a>
+                @if (entry.children?.length) {
+                    <div class="dash-subnav">
+                        @for (child of entry.children; track child.label) {
+                            <a
+                                class="dash-sublink"
+                                [routerLink]="child.route"
+                                routerLinkActive="active-sub"
+                                [routerLinkActiveOptions]="{ exact: false }"
+                            >
+                                {{ child.label }}
+                            </a>
+                        }
+                    </div>
+                }
+            }
+        </nav>
+    </aside>
+    <main class="dash-main">
+        <router-outlet />
+    </main>
+</div>

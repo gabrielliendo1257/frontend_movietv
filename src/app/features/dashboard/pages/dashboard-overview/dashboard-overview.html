@@ -1,0 +1,61 @@
+<section class="overview">
+    <div class="overview-head">
+        <h1 class="page-title">Dashboard</h1>
+        <button class="btn btn-primary" (click)="addMediaOpen.set(true)">+ Add Media</button>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-value">{{ mediaTotal() }}</span>
+            <span class="stat-label">Media</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ identified() }}</span>
+            <span class="stat-label">Identified</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ pending() }}</span>
+            <span class="stat-label">Pending</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ processing() }}</span>
+            <span class="stat-label">Processing</span>
+        </div>
+    </div>
+
+    <div class="overview-grid">
+        <div class="panel">
+            <h2 class="panel-title">Recent Activity</h2>
+            <ul class="activity-list">
+                @for (entry of recentActivity; track entry.text) {
+                    <li class="activity-item">
+                        <span class="activity-dot" [class.failed]="entry.state === 'failed'"></span>
+                        <span class="activity-text">{{ entry.text }}</span>
+                        <span class="activity-when">{{ entry.when }}</span>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <div class="panel">
+            <h2 class="panel-title">Libraries</h2>
+            @if (libraries().length === 0) {
+                <p class="muted">No hay bibliotecas registradas.</p>
+            } @else {
+                <div class="lib-list">
+                    @for (library of libraries(); track library.id) {
+                        <div class="lib-item">
+                            <div class="lib-info">
+                                <span class="lib-type">{{ library.type }}</span>
+                                <span class="lib-name">Biblioteca #{{ library.id }}</span>
+                            </div>
+                            <button class="btn btn-sm" (click)="openLibrary(library)">Open</button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <app-add-media-modal [(isOpen)]="addMediaOpen" (sourceSelected)="onSourceSelected($event)" />
+</section>

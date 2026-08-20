@@ -38,6 +38,45 @@ export const routes: Routes = [
                 path: 'account',
                 loadComponent: () =>
                     import('./features/account/pages/account-page/account-page').then(m => m.AccountPage),
+            },
+            {
+                path: 'dashboard',
+                loadComponent: () =>
+                    import('./features/dashboard/dashboard-layout/dashboard-layout').then(m => m.DashboardLayout),
+                canMatch: [authGuard],
+                children: [
+                    {
+                        path: '',
+                        pathMatch: 'full',
+                        loadComponent: () =>
+                            import('./features/dashboard/pages/dashboard-overview/dashboard-overview').then(m => m.DashboardOverview),
+                    },
+                    {
+                        path: 'libraries',
+                        loadComponent: () =>
+                            import('./features/libraries/pages/libraries-page/libraries-page').then(m => m.LibrariesPage),
+                    },
+                    {
+                        path: 'catalog',
+                        loadComponent: () =>
+                            import('./features/dashboard/pages/catalog/catalog-page').then(m => m.CatalogPage),
+                    },
+                    {
+                        path: 'assets',
+                        loadComponent: () =>
+                            import('./features/dashboard/pages/assets/assets-page').then(m => m.AssetsPage),
+                    },
+                    {
+                        path: 'activity',
+                        loadComponent: () =>
+                            import('./features/dashboard/pages/activity/activity-page').then(m => m.ActivityPage),
+                    },
+                    {
+                        path: 'settings',
+                        loadComponent: () =>
+                            import('./features/dashboard/pages/settings/settings-page').then(m => m.SettingsPage),
+                    },
+                ]
             }
         ]
     },

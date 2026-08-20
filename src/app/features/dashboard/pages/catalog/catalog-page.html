@@ -1,0 +1,102 @@
+<section class="catalog">
+    <div class="catalog-head">
+        <h1 class="page-title">Catalog</h1>
+        <div class="catalog-controls">
+            <input
+                class="search-input"
+                type="text"
+                placeholder="Search media..."
+                [ngModel]="query()"
+                (ngModelChange)="query.set($event)"
+            />
+            <details class="dropdown">
+                <summary class="btn">Filters ▾</summary>
+                <div class="menu">
+                    <span class="menu-label">Status</span>
+                    <button (click)="statusFilter.set('ALL')" [class.menu-active]="statusFilter() === 'ALL'">Todos</button>
+                    <button (click)="statusFilter.set('READY')" [class.menu-active]="statusFilter() === 'READY'">READY</button>
+                    <button (click)="statusFilter.set('DRAFT')" [class.menu-active]="statusFilter() === 'DRAFT'">DRAFT</button>
+                    <span class="menu-label">Source</span>
+                    <button (click)="sourceFilter.set('ALL')" [class.menu-active]="sourceFilter() === 'ALL'">Todas</button>
+                    <button (click)="sourceFilter.set('LOCAL')" [class.menu-active]="sourceFilter() === 'LOCAL'">LOCAL</button>
+                    <button (click)="sourceFilter.set('S3')" [class.menu-active]="sourceFilter() === 'S3'">S3</button>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    @if (selectedCount()) {
+        <div class="bulk-toolbar">
+            <span class="bulk-count">{{ selectedCount() }} seleccionada{{ selectedCount() === 1 ? '' : 's' }}</span>
+            <div class="bulk-actions">
+                <details class="dropdown">
+                    <summary class="btn">Cambiar estado ▾</summary>
+                    <div class="menu">
+                        <button (click)="openBulkVisibility('PUBLIC')">Público</button>
+                        <button (click)="openBulkVisibility('SHARED')">Compartido</button>
+                        <button (click)="openBulkVisibility('PRIVATE')">Privado</button>
+                    </div>
+                </details>
+            </div>
+        </div>
+    }
+
+    <div class="table-wrap">
+        <table class="catalog-table">
+            <thead>
+                <tr>
+                    <th class="col-select">
+                        <input
+                            class="check"
+                            type="checkbox"
+                            [checked]="allSelected()"
+                            [indeterminate]="someSelected() && !allSelected()"
+                            (change)="toggleSelectAll()"
+                        />
+                    </th>
+                    <th>Title</th>
+                    <th>Kind</th>
+                    <th>Status</th>
+                    <th>Source</th>
+                    <th class="col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (movie of filtered(); track movie.id) {
+                    <tr [class.selected]="isSelected(movie)">
+                        <td class="col-select">
+                            <input class="check" type="checkbox" [checked]="isSelected(movie)" (change)="toggle(movie)" />
+                        </td>
+                        <td class="col-title">{{ movie.title || 'Untitled' }}</td>
+                        <td><span class="kind">{{ kindOf(movie) }}</span></td>
+                        <td><span class="status" [class.ok]="movie.status === 'READY'">{{ movie.status }}</span></td>
+                        <td><span class="source">{{ sourceOf(movie) }}</span></td>
+                        <td class="col-actions">
+                            <details class="dropdown">
+                                <summary class="menu-trigger">⋮</summary>
+                                <div class="menu menu-right">
+                                    <button (click)="editMovie(movie)">Editar</button>
+                                    <button (click)="openRowVisibility(movie)">Cambiar estado</button>
+                                </div>
+                            </details>
+                        </td>
+                    </tr>
+                } @empty {
+                    <tr>
+                        <td colspan="6" class="empty-cell">No media found.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (visibilityTarget(); as target) {
+        <app-visibility-modal
+            [label]="target.label"
+            [movieIds]="target.movieIds"
+            [initialVisibility]="target.initialVisibility"
+            (closed)="onVisibilityClosed()"
+            (done)="onVisibilityDone($event)"
+        />
+    }
+</section>
