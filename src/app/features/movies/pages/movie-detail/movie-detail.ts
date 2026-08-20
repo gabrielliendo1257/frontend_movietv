@@ -70,42 +70,51 @@ export class MovieDetail implements OnInit {
     saveVisibility(value: MovieVisibility): void {
         const movie = this.movie();
         if (!movie) return;
+        if (value === 'SHARED') {
+            const usernames = this.parseUsernames();
+            if (!usernames.length) {
+                this.toast.warning('Escribe al menos un usuario para compartir');
+                return;
+            }
+            this.applyVisibility(movie, 'SHARED', usernames);
+            return;
+        }
+        this.applyVisibility(movie, value);
+    }
+
+    saveShares(): void {
+        const movie = this.movie();
+        if (!movie) return;
+        const usernames = this.parseUsernames();
+        if (!usernames.length) {
+            this.toast.warning('Escribe al menos un usuario');
+            return;
+        }
+        this.applyVisibility(movie, 'SHARED', usernames);
+    }
+
+    private parseUsernames(): string[] {
+        return this.sharesInput()
+            .split(',')
+            .map((username) => username.trim())
+            .filter(Boolean);
+    }
+
+    private applyVisibility(movie: WebMovie, value: MovieVisibility, usernames?: string[]): void {
         this.saving.set(true);
-        this.movieProviderService.setVisibility(movie.id, value).subscribe({
+        this.movieProviderService.setVisibility(movie.id, value, usernames).subscribe({
             next: (updated) => {
                 this.visibility.set(updated.visibility ?? value);
                 this.saving.set(false);
+                if (value === 'SHARED') {
+                    this.sharesInput.set('');
+                }
                 this.toast.success(`Visibilidad: ${VISIBILITY_LABELS[updated.visibility ?? value]}`);
             },
             error: () => {
                 this.visibility.set(movie.visibility ?? 'PRIVATE');
                 this.saving.set(false);
                 this.toast.error('Solo el dueño puede cambiar la visibilidad');
-            },
-        });
-    }
-
-    saveShares(): void {
-        const movie = this.movie();
-        if (!movie) return;
-        const usernames = this.sharesInput()
-            .split(',')
-            .map((username) => username.trim())
-            .filter(Boolean);
-        if (!usernames.length) {
-            this.toast.warning('Escribe al menos un usuario');
-            return;
-        }
-        this.saving.set(true);
-        this.movieProviderService.setShares(movie.id, usernames).subscribe({
-            next: () => {
-                this.saving.set(false);
-                this.sharesInput.set('');
-                this.toast.success(`Compartida con: ${usernames.join(', ')}`);
-            },
-            error: () => {
-                this.saving.set(false);
-                this.toast.error('Solo el dueño puede compartir la película');
             },
         });
     }

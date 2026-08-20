@@ -65,9 +65,17 @@ export class MovieProviderService {
         );
     }
 
-    setVisibility(movieId: number, visibility: MovieVisibility): Observable<WebMovie> {
+    setVisibility(
+        movieId: number,
+        visibility: MovieVisibility,
+        usernames?: string[],
+    ): Observable<WebMovie> {
         return this.http
-            .post<WebMovieWire>(`${this.baseUrl}/${movieId}/visibility`, { visibility }, { withCredentials: true })
+            .post<WebMovieWire>(
+                `${this.baseUrl}/${movieId}/visibility`,
+                { visibility, usernames },
+                { withCredentials: true },
+            )
             .pipe(map(toWebMovie));
     }
 

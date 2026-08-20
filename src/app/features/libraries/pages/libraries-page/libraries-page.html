@@ -40,6 +40,7 @@
                         <div class="library-actions">
                             <button class="btn" (click)="openScan(library)">Escanear</button>
                             <button class="btn" (click)="openUnidentified(library)">Sin identificar</button>
+                            <button class="btn" (click)="openVisibility(library)">Visibilidad</button>
                             <button class="btn btn-danger" (click)="delete(library)">Eliminar</button>
                         </div>
                     </div>
@@ -153,6 +154,15 @@
                     }
                 }
             </div>
+        }
+
+        @if (visibilityTarget(); as library) {
+            <app-visibility-modal
+                [label]="'Biblioteca #' + library.id + ' (todas sus películas)'"
+                [libraryIds]="[library.id]"
+                (closed)="onVisibilityClosed()"
+                (done)="onVisibilityDone($event)"
+            />
         }
     }
 </section>

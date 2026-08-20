@@ -1,0 +1,19 @@
+<div class="job-progress">
+    <div class="job-track">
+        <div
+            class="job-fill"
+            [class.indeterminate]="isRunning() && percent() === 0"
+            [style.width.%]="percent()"
+        ></div>
+    </div>
+    <div class="job-meta">
+        <span class="job-count">{{ job().done }}/{{ job().total }}</span>
+        @if (job().failed > 0) {
+            <span class="job-failed">{{ job().failed }} fallidas</span>
+        } @else if (isRunning()) {
+            <span class="job-state">aplicando...</span>
+        } @else {
+            <span class="job-state">completado</span>
+        }
+    </div>
+</div>

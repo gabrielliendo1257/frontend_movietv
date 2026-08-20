@@ -7,6 +7,8 @@ import { LibrariesService } from '@features/libraries/services/libraries.service
 import { Library, MediaAsset } from '@features/libraries/models/library';
 import { EnrichmentSearchResult } from '@features/movies/models/enrichment';
 import { MovieProviderService } from '@features/movies/services/movie-provider.service';
+import { VisibilityModal } from '@features/movies/components/visibility-modal/visibility-modal';
+import { VisibilityJob } from '@features/movies/models/visibility';
 
 const MIN_QUERY_LENGTH = 2;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -14,7 +16,7 @@ const PAGE_SIZE = 10;
 
 @Component({
     selector: 'app-libraries-page',
-    imports: [FormsModule],
+    imports: [FormsModule, VisibilityModal],
     templateUrl: './libraries-page.html',
     styleUrl: './libraries-page.css',
 })
@@ -47,6 +49,8 @@ export class LibrariesPage {
     readonly identifying = signal(false);
 
     readonly movieTitles = signal<Record<number, string>>({});
+
+    readonly visibilityTarget = signal<Library | null>(null);
 
     assetLabel(movieId: number | null, relativePath: string): string {
         const title = movieId != null ? this.movieTitles()[movieId] : undefined;
@@ -137,6 +141,19 @@ export class LibrariesPage {
         this.selected.set(library);
         this.mode.set('unidentified');
         this.loadUnidentified(library.id, 0);
+    }
+
+    openVisibility(library: Library): void {
+        this.visibilityTarget.set(library);
+    }
+
+    onVisibilityClosed(): void {
+        this.visibilityTarget.set(null);
+    }
+
+    onVisibilityDone(_job: VisibilityJob): void {
+        this.visibilityTarget.set(null);
+        this.loadLibraries();
     }
 
     loadAssets(libraryId: number, page: number): void {

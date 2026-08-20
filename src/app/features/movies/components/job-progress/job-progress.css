@@ -1,0 +1,50 @@
+.job-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.job-track {
+    height: 8px;
+    background: var(--color-border);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.job-fill {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.job-fill.indeterminate {
+    width: 40% !important;
+    animation: job-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes job-slide {
+    0% {
+        margin-left: -40%;
+    }
+    100% {
+        margin-left: 100%;
+    }
+}
+
+.job-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: var(--color-muted);
+}
+
+.job-count {
+    color: var(--color-heading);
+    font-weight: 600;
+}
+
+.job-failed {
+    color: var(--color-danger);
+}

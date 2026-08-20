@@ -1,0 +1,73 @@
+<div class="modal-backdrop" [class.open]="isOpen()" (click)="close()">
+    <div class="modal" [class.open]="isOpen()" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h2 class="modal-title">Visibilidad</h2>
+            <button class="modal-close" (click)="close()">✕</button>
+        </div>
+
+        <div class="modal-body">
+            <p class="scope">{{ label() }}</p>
+
+            @if (phase() === 'form') {
+                <div class="options">
+                    @for (option of options; track option.value) {
+                        <button
+                            class="option"
+                            [class.active]="visibility() === option.value"
+                            [disabled]="submitting()"
+                            (click)="selectVisibility(option.value)"
+                        >
+                            {{ option.label }}
+                        </button>
+                    }
+                </div>
+
+                @if (visibility() === 'SHARED') {
+                    <div class="shares">
+                        <label class="shares-label">Compartir con</label>
+                        <div class="chips">
+                            @for (username of usernames(); track username; let i = $index) {
+                                <span class="chip">
+                                    {{ username }}
+                                    <button class="chip-remove" (click)="removeUsername(i)">×</button>
+                                </span>
+                            }
+                        </div>
+                        <div class="shares-input-row">
+                            <input
+                                class="shares-input"
+                                type="text"
+                                placeholder="usuario"
+                                [value]="newUsername()"
+                                (input)="newUsername.set($any($event.target).value)"
+                                (keydown.enter)="addUsername()"
+                            />
+                            <button class="btn" (click)="addUsername()">Añadir</button>
+                        </div>
+                    </div>
+                }
+
+                @if (error()) {
+                    <p class="error">{{ error() }}</p>
+                }
+
+                <div class="actions">
+                    <button class="btn" (click)="close()" [disabled]="submitting()">Cancelar</button>
+                    <button class="btn btn-primary" (click)="submit()" [disabled]="submitting()">
+                        {{ submitting() ? 'Aplicando...' : 'Aplicar' }}
+                    </button>
+                </div>
+            } @else {
+                @if (job(); as job) {
+                    <app-job-progress [job]="job" />
+                }
+                @if (error()) {
+                    <p class="error">{{ error() }}</p>
+                    <div class="actions">
+                        <button class="btn" (click)="close()">Cerrar</button>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
