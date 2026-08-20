@@ -14,6 +14,12 @@ const MIN_QUERY_LENGTH = 2;
 const SEARCH_DEBOUNCE_MS = 300;
 const PAGE_SIZE = 10;
 
+interface VisibilityTarget {
+    label: string;
+    movieIds?: number[];
+    libraryIds?: number[];
+}
+
 @Component({
     selector: 'app-libraries-page',
     imports: [FormsModule, VisibilityModal],
@@ -50,7 +56,8 @@ export class LibrariesPage {
 
     readonly movieTitles = signal<Record<number, string>>({});
 
-    readonly visibilityTarget = signal<Library | null>(null);
+    readonly visibilityTarget = signal<VisibilityTarget | null>(null);
+    readonly selectedMovieIds = signal<number[]>([]);
 
     assetLabel(movieId: number | null, relativePath: string): string {
         const title = movieId != null ? this.movieTitles()[movieId] : undefined;
@@ -134,17 +141,40 @@ export class LibrariesPage {
     openScan(library: Library): void {
         this.selected.set(library);
         this.mode.set('scan');
+        this.selectedMovieIds.set([]);
         this.loadAssets(library.id, 0);
     }
 
     openUnidentified(library: Library): void {
         this.selected.set(library);
         this.mode.set('unidentified');
+        this.selectedMovieIds.set([]);
         this.loadUnidentified(library.id, 0);
     }
 
     openVisibility(library: Library): void {
-        this.visibilityTarget.set(library);
+        this.visibilityTarget.set({
+            label: `Biblioteca #${library.id} (todas sus películas)`,
+            libraryIds: [library.id],
+        });
+    }
+
+    toggleAsset(asset: MediaAsset): void {
+        if (asset.movieId == null) return;
+        const current = this.selectedMovieIds();
+        const next = current.includes(asset.movieId)
+            ? current.filter((id) => id !== asset.movieId)
+            : [...current, asset.movieId];
+        this.selectedMovieIds.set(next);
+    }
+
+    openBulkVisibility(): void {
+        const movieIds = this.selectedMovieIds();
+        if (!movieIds.length) return;
+        this.visibilityTarget.set({
+            label: `${movieIds.length} película${movieIds.length === 1 ? '' : 's'} seleccionada${movieIds.length === 1 ? '' : 's'}`,
+            movieIds,
+        });
     }
 
     onVisibilityClosed(): void {
@@ -153,6 +183,7 @@ export class LibrariesPage {
 
     onVisibilityDone(_job: VisibilityJob): void {
         this.visibilityTarget.set(null);
+        this.selectedMovieIds.set([]);
         this.loadLibraries();
     }
 

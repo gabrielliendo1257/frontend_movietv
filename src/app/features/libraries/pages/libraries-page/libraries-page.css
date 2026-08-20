@@ -187,6 +187,38 @@
     gap: 0.5rem;
 }
 
+.bulk-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--color-primary);
+    border-radius: 10px;
+    background: rgba(255, 61, 0, 0.08);
+    margin-bottom: 0.75rem;
+}
+
+.bulk-count {
+    color: var(--color-heading);
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.asset-check {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.asset-check-placeholder {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
 .asset-row {
     border: 1px solid var(--color-border);
     border-radius: 10px;

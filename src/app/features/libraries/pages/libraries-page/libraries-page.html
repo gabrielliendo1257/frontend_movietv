@@ -67,9 +67,25 @@
                 } @else if (assets().length === 0) {
                     <p class="muted">Sin resultados.</p>
                 } @else {
+                    @if (selectedMovieIds().length) {
+                        <div class="bulk-bar">
+                            <span class="bulk-count">{{ selectedMovieIds().length }} seleccionada{{ selectedMovieIds().length === 1 ? '' : 's' }}</span>
+                            <button class="btn btn-primary" (click)="openBulkVisibility()">Cambiar visibilidad</button>
+                        </div>
+                    }
                     <div class="asset-list">
                         @for (asset of assets(); track asset.id) {
                             <div class="asset-row">
+                                @if (asset.movieId) {
+                                    <input
+                                        class="asset-check"
+                                        type="checkbox"
+                                        [checked]="selectedMovieIds().includes(asset.movieId)"
+                                        (change)="toggleAsset(asset)"
+                                    />
+                                } @else {
+                                    <span class="asset-check-placeholder"></span>
+                                }
                                 <div class="asset-info">
                                     @if (hasTitle(asset.movieId)) {
                                         <span class="asset-path asset-title">{{ movieTitles()[asset.movieId ?? -1] }}</span>
@@ -156,10 +172,11 @@
             </div>
         }
 
-        @if (visibilityTarget(); as library) {
+        @if (visibilityTarget(); as target) {
             <app-visibility-modal
-                [label]="'Biblioteca #' + library.id + ' (todas sus películas)'"
-                [libraryIds]="[library.id]"
+                [label]="target.label"
+                [movieIds]="target.movieIds ?? []"
+                [libraryIds]="target.libraryIds ?? []"
                 (closed)="onVisibilityClosed()"
                 (done)="onVisibilityDone($event)"
             />
