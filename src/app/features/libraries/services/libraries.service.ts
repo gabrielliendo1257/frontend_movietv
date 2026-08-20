@@ -46,6 +46,10 @@ export class LibrariesService {
         });
     }
 
+    cancelScan(libraryId: number): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/${libraryId}/scan`, { withCredentials: true });
+    }
+
     identify(assetId: number, request: IdentifyAssetRequest): Observable<MediaAsset> {
         return this.http.post<MediaAsset>(
             `${this.baseUrl}/assets/${assetId}/identify`,

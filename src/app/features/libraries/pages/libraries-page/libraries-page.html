@@ -38,10 +38,9 @@
                         </div>
                         <h3 class="library-title">Biblioteca #{{ library.id }}</h3>
                         <div class="library-actions">
-                            <button class="btn" (click)="openScan(library)">Escanear</button>
-                            <button class="btn" (click)="openUnidentified(library)">Sin identificar</button>
-                            <button class="btn" (click)="openVisibility(library)">Visibilidad</button>
-                            <button class="btn btn-danger" (click)="delete(library)">Eliminar</button>
+                            <button class="btn" (click)="openScan(library)">Abrir</button>
+                            <button class="btn" (click)="openLibraryVisibility(library)">Visibilidad</button>
+                            <button class="btn btn-danger" (click)="deleteLibrary(library)">Eliminar</button>
                         </div>
                     </div>
                 }
@@ -51,14 +50,13 @@
         @if (selected(); as library) {
             <div class="assets-panel">
                 <div class="assets-head">
-                    <h2>{{ selectedName() }}</h2>
-                    <div class="tabs">
-                        <button class="tab" [class.active]="mode() === 'scan'" (click)="openScan(library)">
-                            Assets ({{ assetsTotal() }})
-                        </button>
-                        <button class="tab" [class.active]="mode() === 'unidentified'" (click)="openUnidentified(library)">
-                            Sin identificar
-                        </button>
+                    <div class="assets-title-block">
+                        <h2>{{ selectedName() }}</h2>
+                        <div class="assets-stats">
+                            <span class="stat"><strong>{{ assetsTotal() }}</strong> assets</span>
+                            <span class="stat"><strong>{{ identifiedCount() }}</strong> identificados</span>
+                            <span class="stat"><strong>{{ unidentifiedCount() }}</strong> sin identificar</span>
+                        </div>
                     </div>
                 </div>
 
@@ -67,84 +65,143 @@
                 } @else if (assets().length === 0) {
                     <p class="muted">Sin resultados.</p>
                 } @else {
-                    @if (selectedMovieIds().length) {
-                        <div class="bulk-bar">
-                            <span class="bulk-count">{{ selectedMovieIds().length }} seleccionada{{ selectedMovieIds().length === 1 ? '' : 's' }}</span>
-                            <button class="btn btn-primary" (click)="openBulkVisibility()">Cambiar visibilidad</button>
+                    @if (selectedCount()) {
+                        <div class="bulk-toolbar">
+                            <span class="bulk-count">{{ selectedCount() }} seleccionado{{ selectedCount() === 1 ? '' : 's' }}</span>
+                            <div class="bulk-actions">
+                                <button
+                                    class="btn"
+                                    disabled
+                                    title="Identificación masiva no disponible (backend pendiente)"
+                                >
+                                    Identificar
+                                </button>
+                                <details class="dropdown">
+                                    <summary class="btn">Cambiar estado ▾</summary>
+                                    <div class="menu">
+                                        <button (click)="openBulkVisibility('PUBLIC')">Público</button>
+                                        <button (click)="openBulkVisibility('SHARED')">Compartido</button>
+                                        <button (click)="openBulkVisibility('PRIVATE')">Privado</button>
+                                    </div>
+                                </details>
+                                <button
+                                    class="btn btn-danger"
+                                    disabled
+                                    title="Eliminar assets no disponible (backend pendiente)"
+                                >
+                                    Eliminar
+                                </button>
+                                <details class="dropdown">
+                                    <summary class="btn">Más ▾</summary>
+                                    <div class="menu">
+                                        <button (click)="cancelScan()">Cancelar escaneo</button>
+                                        <button (click)="clearSelection()">Limpiar selección</button>
+                                    </div>
+                                </details>
+                            </div>
                         </div>
                     }
-                    <div class="asset-list">
-                        @for (asset of assets(); track asset.id) {
-                            <div class="asset-row">
-                                @if (asset.movieId) {
-                                    <input
-                                        class="asset-check"
-                                        type="checkbox"
-                                        [checked]="selectedMovieIds().includes(asset.movieId)"
-                                        (change)="toggleAsset(asset)"
-                                    />
-                                } @else {
-                                    <span class="asset-check-placeholder"></span>
-                                }
-                                <div class="asset-info">
-                                    @if (hasTitle(asset.movieId)) {
-                                        <span class="asset-path asset-title">{{ movieTitles()[asset.movieId ?? -1] }}</span>
-                                        <span class="asset-meta">
-                                            {{ asset.relativePath }} · {{ formatSize(asset.size) }} · {{ asset.mimeType }}
-                                        </span>
-                                    } @else {
-                                        <span class="asset-path">{{ asset.relativePath }}</span>
-                                        <span class="asset-meta">
-                                            {{ formatSize(asset.size) }} · {{ asset.mimeType }}
-                                        </span>
-                                    }
-                                    <span class="asset-status" [class.ok]="asset.status === 'IDENTIFIED'">
-                                        {{ asset.status }}
-                                    </span>
-                                    @if (asset.movieId) {
-                                        <span class="asset-movie">movie #{{ asset.movieId }}</span>
-                                    }
-                                </div>
 
-                                @if (asset.status === 'UNIDENTIFIED') {
-                                    @if (identifyAssetId() === asset.id) {
-                                        <div class="identify-box">
+                    <div class="table-wrap">
+                        <table class="asset-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-select">
+                                        <input
+                                            class="asset-check"
+                                            type="checkbox"
+                                            [checked]="allSelected()"
+                                            [indeterminate]="someSelected() && !allSelected()"
+                                            (change)="toggleSelectAll()"
+                                        />
+                                    </th>
+                                    <th class="col-resource">Recurso</th>
+                                    <th class="col-size">Tamaño</th>
+                                    <th class="col-type">Tipo</th>
+                                    <th class="col-status">Estado</th>
+                                    <th class="col-actions">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (asset of assets(); track asset.id) {
+                                    <tr [class.selected]="isSelected(asset)">
+                                        <td class="col-select">
                                             <input
-                                                class="identify-input"
-                                                type="text"
-                                                placeholder="Buscar en TMDB..."
-                                                [ngModel]="identifyQuery()"
-                                                (ngModelChange)="onIdentifyQuery($event)"
-                                                (keydown.enter)="identifyWithTitle(asset)"
+                                                class="asset-check"
+                                                type="checkbox"
+                                                [checked]="isSelected(asset)"
+                                                (change)="toggleAsset(asset)"
                                             />
-                                            <button
-                                                class="btn btn-primary"
-                                                (click)="identifyWithTitle(asset)"
-                                                [disabled]="identifying()"
-                                            >
-                                                {{ identifying() ? 'Identificando...' : 'Identificar' }}
-                                            </button>
-                                            @if (identifyResults().length) {
-                                                <ul class="identify-results">
-                                                    @for (result of identifyResults(); track result.tmdb_id) {
-                                                        <li (click)="identifyWithResult(asset, result)">
-                                                            {{ result.title }}
-                                                            @if (result.year) {
-                                                                <span class="muted">({{ result.year }})</span>
-                                                            }
-                                                        </li>
-                                                    }
-                                                </ul>
+                                        </td>
+                                        <td class="col-resource">
+                                            <span class="resource-name">{{ asset.relativePath }}</span>
+                                        </td>
+                                        <td class="col-size">{{ formatSize(asset.size) }}</td>
+                                        <td class="col-type">{{ asset.mimeType }}</td>
+                                        <td class="col-status">
+                                            <span class="asset-status" [class.ok]="asset.status === 'IDENTIFIED'">
+                                                {{ asset.status }}
+                                            </span>
+                                            @if (asset.movieId) {
+                                                <span class="asset-movie">movie #{{ asset.movieId }}</span>
                                             }
-                                        </div>
-                                    } @else {
-                                        <button class="btn" (click)="identifyAssetId.set(asset.id)">
-                                            Identificar
-                                        </button>
+                                        </td>
+                                        <td class="col-actions">
+                                            @if (asset.status === 'UNIDENTIFIED') {
+                                                <button class="btn btn-sm" (click)="identifyAssetId.set(asset.id)">
+                                                    Identificar
+                                                </button>
+                                            } @else {
+                                                <details class="dropdown">
+                                                    <summary class="menu-trigger" title="Más acciones">⋮</summary>
+                                                    <div class="menu menu-right">
+                                                        <button (click)="goToDetails(asset)">Ver detalles</button>
+                                                        <button (click)="openRowVisibility(asset)">Cambiar estado</button>
+                                                    </div>
+                                                </details>
+                                            }
+                                        </td>
+                                    </tr>
+
+                                    @if (identifyAssetId() === asset.id) {
+                                        <tr class="identify-row">
+                                            <td colspan="6">
+                                                <div class="identify-box">
+                                                    <input
+                                                        class="identify-input"
+                                                        type="text"
+                                                        placeholder="Buscar en TMDB..."
+                                                        [ngModel]="identifyQuery()"
+                                                        (ngModelChange)="onIdentifyQuery($event)"
+                                                        (keydown.enter)="identifyWithTitle(asset)"
+                                                    />
+                                                    <button
+                                                        class="btn btn-primary"
+                                                        (click)="identifyWithTitle(asset)"
+                                                        [disabled]="identifying()"
+                                                    >
+                                                        {{ identifying() ? 'Identificando...' : 'Identificar' }}
+                                                    </button>
+                                                    <button class="btn" (click)="identifyAssetId.set(null)">Cancelar</button>
+                                                    @if (identifyResults().length) {
+                                                        <ul class="identify-results">
+                                                            @for (result of identifyResults(); track result.tmdb_id) {
+                                                                <li (click)="identifyWithResult(asset, result)">
+                                                                    {{ result.title }}
+                                                                    @if (result.year) {
+                                                                        <span class="muted">({{ result.year }})</span>
+                                                                    }
+                                                                </li>
+                                                            }
+                                                        </ul>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
                                     }
                                 }
-                            </div>
-                        }
+                            </tbody>
+                        </table>
                     </div>
 
                     @if (assetsTotalPages() > 1) {
@@ -177,6 +234,7 @@
                 [label]="target.label"
                 [movieIds]="target.movieIds ?? []"
                 [libraryIds]="target.libraryIds ?? []"
+                [initialVisibility]="target.initialVisibility ?? 'PRIVATE'"
                 (closed)="onVisibilityClosed()"
                 (done)="onVisibilityDone($event)"
             />

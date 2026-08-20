@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, filter, map, Subject, switchMap } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
 import { ToastService } from '@core/services/toast.service';
@@ -7,17 +8,19 @@ import { LibrariesService } from '@features/libraries/services/libraries.service
 import { Library, MediaAsset } from '@features/libraries/models/library';
 import { EnrichmentSearchResult } from '@features/movies/models/enrichment';
 import { MovieProviderService } from '@features/movies/services/movie-provider.service';
+import { MovieVisibility } from '@features/movies/models/web-movie';
 import { VisibilityModal } from '@features/movies/components/visibility-modal/visibility-modal';
 import { VisibilityJob } from '@features/movies/models/visibility';
 
 const MIN_QUERY_LENGTH = 2;
 const SEARCH_DEBOUNCE_MS = 300;
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 interface VisibilityTarget {
     label: string;
     movieIds?: number[];
     libraryIds?: number[];
+    initialVisibility?: MovieVisibility;
 }
 
 @Component({
@@ -31,6 +34,7 @@ export class LibrariesPage {
     private readonly movieProviderService = inject(MovieProviderService);
     private readonly toast = inject(ToastService);
     private readonly authService = inject(AuthService);
+    private readonly router = inject(Router);
 
     private readonly identifySearchSubject = new Subject<string>();
 
@@ -46,27 +50,33 @@ export class LibrariesPage {
     readonly assetsTotal = signal(0);
     readonly assetsPage = signal(0);
     readonly assetsTotalPages = signal(0);
-    readonly mode = signal<'scan' | 'unidentified'>('scan');
     readonly loadingAssets = signal(false);
+    readonly unidentifiedCount = signal(0);
 
     readonly identifyAssetId = signal<number | null>(null);
     readonly identifyQuery = signal('');
     readonly identifyResults = signal<EnrichmentSearchResult[]>([]);
     readonly identifying = signal(false);
 
-    readonly movieTitles = signal<Record<number, string>>({});
-
     readonly visibilityTarget = signal<VisibilityTarget | null>(null);
-    readonly selectedMovieIds = signal<number[]>([]);
 
-    assetLabel(movieId: number | null, relativePath: string): string {
-        const title = movieId != null ? this.movieTitles()[movieId] : undefined;
-        return title ?? relativePath;
-    }
+    readonly selectedAssetIds = signal<number[]>([]);
 
-    hasTitle(movieId: number | null): boolean {
-        return movieId != null && !!this.movieTitles()[movieId];
-    }
+    readonly selectedCount = computed(() => this.selectedAssetIds().length);
+
+    readonly allSelected = computed(
+        () =>
+            this.assets().length > 0 &&
+            this.assets().every((asset) => this.selectedAssetIds().includes(asset.id)),
+    );
+
+    readonly someSelected = computed(() =>
+        this.assets().some((asset) => this.selectedAssetIds().includes(asset.id)),
+    );
+
+    readonly identifiedCount = computed(() =>
+        Math.max(0, this.assetsTotal() - this.unidentifiedCount()),
+    );
 
     readonly selectedName = computed(() => {
         const selected = this.selected();
@@ -127,7 +137,7 @@ export class LibrariesPage {
         });
     }
 
-    delete(library: Library): void {
+    deleteLibrary(library: Library): void {
         this.librariesService.delete(library.id).subscribe({
             next: () => {
                 this.libraries.set(this.libraries().filter((item) => item.id !== library.id));
@@ -140,51 +150,10 @@ export class LibrariesPage {
 
     openScan(library: Library): void {
         this.selected.set(library);
-        this.mode.set('scan');
-        this.selectedMovieIds.set([]);
+        this.selectedAssetIds.set([]);
+        this.identifyAssetId.set(null);
         this.loadAssets(library.id, 0);
-    }
-
-    openUnidentified(library: Library): void {
-        this.selected.set(library);
-        this.mode.set('unidentified');
-        this.selectedMovieIds.set([]);
-        this.loadUnidentified(library.id, 0);
-    }
-
-    openVisibility(library: Library): void {
-        this.visibilityTarget.set({
-            label: `Biblioteca #${library.id} (todas sus películas)`,
-            libraryIds: [library.id],
-        });
-    }
-
-    toggleAsset(asset: MediaAsset): void {
-        if (asset.movieId == null) return;
-        const current = this.selectedMovieIds();
-        const next = current.includes(asset.movieId)
-            ? current.filter((id) => id !== asset.movieId)
-            : [...current, asset.movieId];
-        this.selectedMovieIds.set(next);
-    }
-
-    openBulkVisibility(): void {
-        const movieIds = this.selectedMovieIds();
-        if (!movieIds.length) return;
-        this.visibilityTarget.set({
-            label: `${movieIds.length} película${movieIds.length === 1 ? '' : 's'} seleccionada${movieIds.length === 1 ? '' : 's'}`,
-            movieIds,
-        });
-    }
-
-    onVisibilityClosed(): void {
-        this.visibilityTarget.set(null);
-    }
-
-    onVisibilityDone(_job: VisibilityJob): void {
-        this.visibilityTarget.set(null);
-        this.selectedMovieIds.set([]);
-        this.loadLibraries();
+        this.loadCounts(library.id);
     }
 
     loadAssets(libraryId: number, page: number): void {
@@ -196,7 +165,6 @@ export class LibrariesPage {
                 this.assetsPage.set(result.page);
                 this.assetsTotalPages.set(result.totalPages);
                 this.loadingAssets.set(false);
-                this.loadMovieTitles(result.items);
             },
             error: () => {
                 this.loadingAssets.set(false);
@@ -205,21 +173,10 @@ export class LibrariesPage {
         });
     }
 
-    loadUnidentified(libraryId: number, page: number): void {
-        this.loadingAssets.set(true);
-        this.librariesService.unidentified(libraryId, page, PAGE_SIZE).subscribe({
-            next: (result) => {
-                this.assets.set(result.items);
-                this.assetsTotal.set(result.total);
-                this.assetsPage.set(result.page);
-                this.assetsTotalPages.set(result.totalPages);
-                this.loadingAssets.set(false);
-                this.loadMovieTitles(result.items);
-            },
-            error: () => {
-                this.loadingAssets.set(false);
-                this.toast.error('No se pudieron cargar los assets sin identificar');
-            },
+    private loadCounts(libraryId: number): void {
+        this.librariesService.unidentified(libraryId, 0, 1).subscribe({
+            next: (result) => this.unidentifiedCount.set(result.total),
+            error: () => this.unidentifiedCount.set(0),
         });
     }
 
@@ -228,10 +185,97 @@ export class LibrariesPage {
         if (!selected) return;
         const nextPage = this.assetsPage() + offset;
         if (nextPage < 0 || nextPage >= this.assetsTotalPages()) return;
-        if (this.mode() === 'scan') {
-            this.loadAssets(selected.id, nextPage);
-        } else {
-            this.loadUnidentified(selected.id, nextPage);
+        this.loadAssets(selected.id, nextPage);
+    }
+
+    cancelScan(): void {
+        const selected = this.selected();
+        if (!selected) return;
+        this.closeMenus();
+        this.librariesService.cancelScan(selected.id).subscribe({
+            next: () => this.toast.info('Escaneo cancelado'),
+            error: () => this.toast.error('No se pudo cancelar el escaneo'),
+        });
+    }
+
+    clearSelection(): void {
+        this.selectedAssetIds.set([]);
+        this.closeMenus();
+    }
+
+    toggleAsset(asset: MediaAsset): void {
+        const current = this.selectedAssetIds();
+        const next = current.includes(asset.id)
+            ? current.filter((id) => id !== asset.id)
+            : [...current, asset.id];
+        this.selectedAssetIds.set(next);
+    }
+
+    toggleSelectAll(): void {
+        this.selectedAssetIds.set(
+            this.allSelected() ? [] : this.assets().map((asset) => asset.id),
+        );
+    }
+
+    isSelected(asset: MediaAsset): boolean {
+        return this.selectedAssetIds().includes(asset.id);
+    }
+
+    private selectedIdentifiedMovieIds(): number[] {
+        const selected = new Set(this.selectedAssetIds());
+        return this.assets()
+            .filter((asset) => selected.has(asset.id) && asset.movieId != null)
+            .map((asset) => asset.movieId as number);
+    }
+
+    openBulkVisibility(visibility: MovieVisibility): void {
+        this.closeMenus();
+        const movieIds = this.selectedIdentifiedMovieIds();
+        if (!movieIds.length) {
+            this.toast.warning('Ningún asset seleccionado está identificado');
+            return;
+        }
+        this.visibilityTarget.set({
+            label: `${movieIds.length} película${movieIds.length === 1 ? '' : 's'} seleccionada${movieIds.length === 1 ? '' : 's'}`,
+            movieIds,
+            initialVisibility: visibility,
+        });
+    }
+
+    openLibraryVisibility(library: Library): void {
+        this.visibilityTarget.set({
+            label: `Biblioteca #${library.id} (todas sus películas)`,
+            libraryIds: [library.id],
+        });
+    }
+
+    openRowVisibility(asset: MediaAsset): void {
+        this.closeMenus();
+        if (asset.movieId == null) return;
+        this.visibilityTarget.set({
+            label: `movie #${asset.movieId}`,
+            movieIds: [asset.movieId],
+        });
+    }
+
+    goToDetails(asset: MediaAsset): void {
+        this.closeMenus();
+        if (asset.movieId == null) return;
+        this.router.navigate(['/movies', asset.movieId]);
+    }
+
+    onVisibilityClosed(): void {
+        this.visibilityTarget.set(null);
+    }
+
+    onVisibilityDone(_job: VisibilityJob): void {
+        this.visibilityTarget.set(null);
+        this.selectedAssetIds.set([]);
+        this.loadLibraries();
+        const selected = this.selected();
+        if (selected) {
+            this.loadAssets(selected.id, this.assetsPage());
+            this.loadCounts(selected.id);
         }
     }
 
@@ -265,11 +309,8 @@ export class LibrariesPage {
                 this.toast.success(`Asset identificado (movie ${request.tmdbId ?? 'por título'})`);
                 const selected = this.selected();
                 if (selected) {
-                    if (this.mode() === 'scan') {
-                        this.loadAssets(selected.id, this.assetsPage());
-                    } else {
-                        this.loadUnidentified(selected.id, this.assetsPage());
-                    }
+                    this.loadAssets(selected.id, this.assetsPage());
+                    this.loadCounts(selected.id);
                 }
             },
             error: () => {
@@ -279,19 +320,10 @@ export class LibrariesPage {
         });
     }
 
-    private loadMovieTitles(assets: MediaAsset[]): void {
-        const known = this.movieTitles();
-        const missing = new Set<number>();
-        for (const asset of assets) {
-            if (asset.movieId != null && !known[asset.movieId]) missing.add(asset.movieId);
-        }
-        for (const movieId of missing) {
-            this.movieProviderService.findById(movieId).subscribe({
-                next: (movie) =>
-                    this.movieTitles.set({ ...this.movieTitles(), [movieId]: movie.title }),
-                error: () => undefined,
-            });
-        }
+    private closeMenus(): void {
+        document.querySelectorAll<HTMLDetailsElement>('details.dropdown[open]').forEach((d) => {
+            d.removeAttribute('open');
+        });
     }
 
     formatSize(bytes: number): string {

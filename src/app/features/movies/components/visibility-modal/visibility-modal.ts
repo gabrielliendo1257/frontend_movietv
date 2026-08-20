@@ -25,6 +25,7 @@ export class VisibilityModal {
     readonly label = input.required<string>();
     readonly movieIds = input<number[]>([]);
     readonly libraryIds = input<number[]>([]);
+    readonly initialVisibility = input<MovieVisibility>('PRIVATE');
 
     readonly closed = output<void>();
     readonly done = output<VisibilityJob>();
@@ -41,6 +42,7 @@ export class VisibilityModal {
 
     ngOnInit(): void {
         this.isOpen.set(true);
+        this.visibility.set(this.initialVisibility());
     }
 
     selectVisibility(value: MovieVisibility): void {
