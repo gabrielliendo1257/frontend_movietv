@@ -4,6 +4,7 @@ import { map, Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { MovieVisibility, WebMovie } from '@features/movies/models/web-movie';
 import { EnrichmentPreview, EnrichmentSearchResult } from '@features/movies/models/enrichment';
+import { MovieUpdateRequest } from '@features/movies/models/movie-update';
 
 interface WebMovieWire extends Omit<WebMovie, 'objectId'> {
     object_id?: number | null;
@@ -40,6 +41,18 @@ export class MovieProviderService {
     create(title: string): Observable<WebMovie> {
         return this.http
             .post<WebMovieWire>(this.baseUrl, { title }, { withCredentials: true })
+            .pipe(map(toWebMovie));
+    }
+
+    update(movieId: number, request: MovieUpdateRequest): Observable<WebMovie> {
+        return this.http
+            .put<WebMovieWire>(`${this.baseUrl}/${movieId}`, request, { withCredentials: true })
+            .pipe(map(toWebMovie));
+    }
+
+    unlinkEnrichment(movieId: number): Observable<WebMovie> {
+        return this.http
+            .delete<WebMovieWire>(`${this.baseUrl}/${movieId}/enrichment`, { withCredentials: true })
             .pipe(map(toWebMovie));
     }
 

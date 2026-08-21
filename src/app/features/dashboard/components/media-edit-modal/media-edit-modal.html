@@ -1,0 +1,22 @@
+@if (isOpen()) {
+    <div class="backdrop" (click)="close()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="header">
+                <h2 class="title">Edit Media</h2>
+                <button class="close" (click)="close()">✕</button>
+            </div>
+
+            <div class="body">
+                @if (movie(); as movie) {
+                    <app-media-form
+                        [initial]="movie"
+                        submitLabel="Guardar"
+                        (submitted)="onSave($event)"
+                    >
+                        <button cancel class="btn" (click)="close()">Cancelar</button>
+                    </app-media-form>
+                }
+            </div>
+        </div>
+    </div>
+}

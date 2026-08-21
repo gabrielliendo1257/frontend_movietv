@@ -1,0 +1,97 @@
+<div class="media-form">
+    <div class="kind-row">
+        <span class="kind-label">Media type</span>
+        <div class="kind-toggle">
+            <button type="button" class="kind-btn" [class.active]="kind() === 'MOVIE'" (click)="setKind('MOVIE')">Movie</button>
+            <button type="button" class="kind-btn" [class.active]="kind() === 'OTHER'" (click)="setKind('OTHER')">Other</button>
+        </div>
+    </div>
+
+    <div class="form-grid">
+        <div class="field">
+            <label class="label" for="mf-title">Title *</label>
+            <input id="mf-title" class="input" type="text" [formControl]="controls.title" placeholder="e.g. Inception" />
+            @if (controls.title.invalid && controls.title.touched) {
+                <p class="error-hint">Title is required.</p>
+            }
+        </div>
+
+        <div class="field">
+            <label class="label" for="mf-originalTitle">Original Title</label>
+            <input id="mf-originalTitle" class="input" type="text" [formControl]="controls.originalTitle" placeholder="e.g. Origen" />
+        </div>
+
+        <div class="field-row">
+            <div class="field flex-1">
+                <label class="label" for="mf-year">Year</label>
+                <input id="mf-year" class="input" type="number" [formControl]="controls.year" min="1900" max="2099" />
+            </div>
+            <div class="field flex-1">
+                <label class="label" for="mf-duration">Duration</label>
+                <input id="mf-duration" class="input" type="text" [formControl]="controls.duration" placeholder="2h 28m" />
+            </div>
+        </div>
+
+        <div class="field">
+            <label class="label" for="mf-director">Director</label>
+            <input id="mf-director" class="input" type="text" [formControl]="controls.director" placeholder="Christopher Nolan" />
+        </div>
+
+        <div class="field-row">
+            <div class="field flex-1">
+                <label class="label" for="mf-country">Country</label>
+                <input id="mf-country" class="input" type="text" [formControl]="controls.country" placeholder="USA" />
+            </div>
+            <div class="field flex-1">
+                <label class="label" for="mf-language">Language</label>
+                <input id="mf-language" class="input" type="text" [formControl]="controls.language" placeholder="English" />
+            </div>
+        </div>
+
+        <div class="field">
+            <label class="label" for="mf-release">Release Date</label>
+            <input id="mf-release" class="input" type="text" [formControl]="controls.release_date" placeholder="July 16, 2010" />
+        </div>
+
+        <div class="field">
+            <label class="label">Rating ({{ controls.popularity.value }}/10)</label>
+            <div class="stars">
+                @for (star of ratingStars; track star) {
+                    <span class="star" [class.filled]="star <= controls.popularity.value" (click)="setRating(star)">★</span>
+                }
+            </div>
+        </div>
+
+        <div class="field">
+            <label class="label" for="mf-poster">Poster URL</label>
+            <input id="mf-poster" class="input" type="url" [formControl]="controls.poster_path" placeholder="https://..." />
+        </div>
+
+        <div class="field full-width">
+            <label class="label">Genres</label>
+            <app-chips-input [formControl]="controls.genres" placeholder="Genre" emptyHint="No genres added yet." />
+        </div>
+
+        <div class="field full-width">
+            <label class="label">Cast</label>
+            <app-chips-input [formControl]="controls.cast" placeholder="Actor name" emptyHint="No cast added yet." />
+        </div>
+
+        <div class="field full-width">
+            <label class="label">Awards</label>
+            <app-chips-input [formControl]="controls.awards" placeholder="Award name" emptyHint="No awards added yet." />
+        </div>
+
+        <div class="field full-width">
+            <label class="label" for="mf-overview">Synopsis</label>
+            <textarea id="mf-overview" class="textarea" [formControl]="controls.overview" rows="4" placeholder="Write a brief synopsis..."></textarea>
+        </div>
+    </div>
+
+    <div class="actions">
+        <ng-content select="[cancel]" />
+        <button type="button" class="btn btn-primary" [disabled]="form.invalid" (click)="submit()">
+            {{ submitLabel() }}
+        </button>
+    </div>
+</div>

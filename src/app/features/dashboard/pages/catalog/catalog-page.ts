@@ -1,24 +1,25 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { MovieProviderService } from '@features/movies/services/movie-provider.service';
 import { WebMovie } from '@features/movies/models/web-movie';
 import { MovieVisibility } from '@features/movies/models/web-movie';
 import { VisibilityModal } from '@features/movies/components/visibility-modal/visibility-modal';
 import { VisibilityJob } from '@features/movies/models/visibility';
+import { MediaEditModal } from '@features/dashboard/components/media-edit-modal/media-edit-modal';
+import { ToastService } from '@core/services/toast.service';
 
 type StatusFilter = 'ALL' | 'DRAFT' | 'READY';
 type SourceFilter = 'ALL' | 'LOCAL' | 'S3';
 
 @Component({
     selector: 'app-catalog-page',
-    imports: [FormsModule, VisibilityModal],
+    imports: [FormsModule, VisibilityModal, MediaEditModal],
     templateUrl: './catalog-page.html',
     styleUrl: './catalog-page.css',
 })
 export class CatalogPage {
     private readonly movieProviderService = inject(MovieProviderService);
-    private readonly router = inject(Router);
+    private readonly toast = inject(ToastService);
 
     readonly movies = signal<WebMovie[]>([]);
     readonly query = signal('');
@@ -26,6 +27,8 @@ export class CatalogPage {
     readonly sourceFilter = signal<SourceFilter>('ALL');
     readonly selectedIds = signal<number[]>([]);
     readonly visibilityTarget = signal<{ label: string; movieIds: number[]; initialVisibility: MovieVisibility } | null>(null);
+    readonly editOpen = signal(false);
+    readonly editingMovie = signal<WebMovie | null>(null);
 
     readonly kindOf = (_movie: WebMovie): string => 'MOVIE';
 
@@ -101,7 +104,30 @@ export class CatalogPage {
 
     editMovie(movie: WebMovie): void {
         this.closeMenus();
-        this.router.navigate(['/movies', movie.id]);
+        this.editingMovie.set(movie);
+        this.editOpen.set(true);
+    }
+
+    unlinkProvider(movie: WebMovie): void {
+        this.closeMenus();
+        this.movieProviderService.unlinkEnrichment(movie.id).subscribe({
+            next: () => {
+                this.toast.success('Proveedor desvinculado.');
+                this.reload();
+            },
+            error: () => this.toast.error('No se pudo desvincular el proveedor.'),
+        });
+    }
+
+    onEdited(): void {
+        this.reload();
+    }
+
+    private reload(): void {
+        this.movieProviderService.list().subscribe({
+            next: (movies) => this.movies.set(movies),
+            error: () => undefined,
+        });
     }
 
     onVisibilityClosed(): void {
@@ -111,10 +137,7 @@ export class CatalogPage {
     onVisibilityDone(_job: VisibilityJob): void {
         this.visibilityTarget.set(null);
         this.selectedIds.set([]);
-        this.movieProviderService.list().subscribe({
-            next: (movies) => this.movies.set(movies),
-            error: () => undefined,
-        });
+        this.reload();
     }
 
     private closeMenus(): void {
