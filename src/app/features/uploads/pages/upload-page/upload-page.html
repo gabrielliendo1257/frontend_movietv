@@ -1,4 +1,49 @@
-<app-movie-metadata-form
-    [onUploadSucceeded]="notifyUploadSucceeded"
-    [onUploadFailed]="notifyUploadFailed"
-/>
+<section class="upload-page">
+    <div class="head">
+        <div>
+            <h1 class="page-title">Add Media</h1>
+            <p class="subtitle">Select a file and fill in the media details</p>
+        </div>
+    </div>
+
+    <input #fileInput type="file" class="file-input-hidden" (change)="onFileSelected($event)" />
+
+    <div class="topbar">
+        <button class="btn" (click)="selectFile()">
+            {{ file() ? 'Cambiar archivo' : 'Select file' }}
+        </button>
+        <button class="btn" (click)="openSearch()">Autocomplete</button>
+
+        @if (file(); as file) {
+            <span class="file-info">
+                <strong>{{ file.name }}</strong>
+                <span class="muted">{{ formatFileSize(file.size) }}</span>
+            </span>
+        }
+    </div>
+
+    @if (isUploading()) {
+        <div class="progress-wrap">
+            <div class="progress-track">
+                <div class="progress-fill" [style.width.%]="progress()"></div>
+            </div>
+            <span class="muted">{{ progress() }}%</span>
+        </div>
+    }
+
+    @if (error()) {
+        <div class="error-box">{{ error() }}</div>
+    }
+
+    <app-media-form
+        [initial]="metadata()"
+        [submitLabel]="'Upload'"
+        [externalDisabled]="isUploading() || !file()"
+        (submitted)="onSubmit($event)"
+    />
+
+    <app-movie-search-modal
+        [(isOpen)]="searchOpen"
+        (movieSelected)="onMovieSelected($event)"
+    />
+</section>

@@ -1,4 +1,4 @@
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, effect, inject, input, output, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MovieMetadata } from '@features/uploads/models/movie-metadata';
 import { MediaKind } from '@features/movies/models/media-kind';
@@ -20,6 +20,7 @@ export class MediaForm {
 
     readonly initial = input<MovieMetadata | null>(null);
     readonly submitLabel = input('Guardar');
+    readonly externalDisabled = input(false);
 
     readonly submitted = output<MediaFormValue>();
 
@@ -46,11 +47,13 @@ export class MediaForm {
 
     readonly ratingStars = Array.from({ length: 10 }, (_, i) => i + 1);
 
-    ngOnInit(): void {
-        const initial = this.initial();
-        if (initial) {
-            this.form.patchValue(initial);
-        }
+    constructor() {
+        effect(() => {
+            const initial = this.initial();
+            if (initial) {
+                this.form.patchValue(initial);
+            }
+        });
     }
 
     setKind(value: MediaKind): void {

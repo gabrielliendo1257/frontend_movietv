@@ -90,7 +90,7 @@
 
     <div class="actions">
         <ng-content select="[cancel]" />
-        <button type="button" class="btn btn-primary" [disabled]="form.invalid" (click)="submit()">
+        <button type="button" class="btn btn-primary" [disabled]="form.invalid || externalDisabled()" (click)="submit()">
             {{ submitLabel() }}
         </button>
     </div>
