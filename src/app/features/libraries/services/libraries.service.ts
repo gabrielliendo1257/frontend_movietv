@@ -53,7 +53,7 @@ export class LibrariesService {
     identify(assetId: number, request: IdentifyAssetRequest): Observable<MediaAsset> {
         return this.http.post<MediaAsset>(
             `${this.baseUrl}/assets/${assetId}/identify`,
-            request,
+            { title: request.title, tmdb_id: request.tmdbId },
             { withCredentials: true },
         );
     }
