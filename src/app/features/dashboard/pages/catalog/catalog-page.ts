@@ -10,6 +10,7 @@ import { ToastService } from '@core/services/toast.service';
 
 type StatusFilter = 'ALL' | 'DRAFT' | 'READY';
 type SourceFilter = 'ALL' | 'LOCAL' | 'S3';
+type KindFilter = 'ALL' | 'MOVIE' | 'OTHER';
 
 @Component({
     selector: 'app-catalog-page',
@@ -25,12 +26,13 @@ export class CatalogPage {
     readonly query = signal('');
     readonly statusFilter = signal<StatusFilter>('ALL');
     readonly sourceFilter = signal<SourceFilter>('ALL');
+    readonly kindFilter = signal<KindFilter>('ALL');
     readonly selectedIds = signal<number[]>([]);
     readonly visibilityTarget = signal<{ label: string; movieIds: number[]; initialVisibility: MovieVisibility } | null>(null);
     readonly editOpen = signal(false);
     readonly editingMovie = signal<WebMovie | null>(null);
 
-    readonly kindOf = (_movie: WebMovie): string => 'MOVIE';
+    readonly kindOf = (movie: WebMovie): string => movie.kind ?? 'MOVIE';
 
     readonly sourceOf = (movie: WebMovie): string => (movie.objectId != null ? 'S3' : 'LOCAL');
 
@@ -38,10 +40,12 @@ export class CatalogPage {
         const q = this.query().trim().toLowerCase();
         const status = this.statusFilter();
         const source = this.sourceFilter();
+        const kind = this.kindFilter();
         return this.movies().filter((movie) => {
             if (q && !movie.title.toLowerCase().includes(q)) return false;
             if (status !== 'ALL' && movie.status !== status) return false;
             if (source !== 'ALL' && this.sourceOf(movie) !== source) return false;
+            if (kind !== 'ALL' && this.kindOf(movie) !== kind) return false;
             return true;
         });
     });

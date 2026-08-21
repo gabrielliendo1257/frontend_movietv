@@ -26,22 +26,26 @@ export class MediaEditModal {
         const movie = this.movie();
         if (!movie) return;
         const m = value.metadata;
-        const request: MovieUpdateRequest = {
-            title: m.title,
-            originalTitle: m.originalTitle,
-            year: m.year,
-            genres: m.genres,
-            duration: m.duration,
-            director: m.director,
-            cast: m.cast,
-            overview: m.overview,
-            poster_path: m.poster_path,
-            release_date: m.release_date,
-            country: m.country,
-            language: m.language,
-            awards: m.awards,
-            popularity: m.popularity,
-        };
+        const request: MovieUpdateRequest =
+            value.kind === 'OTHER'
+                ? { title: m.title, kind: 'OTHER' }
+                : {
+                      title: m.title,
+                      originalTitle: m.originalTitle,
+                      year: m.year,
+                      genres: m.genres,
+                      duration: m.duration,
+                      director: m.director,
+                      cast: m.cast,
+                      overview: m.overview,
+                      poster_path: m.poster_path,
+                      release_date: m.release_date,
+                      country: m.country,
+                      language: m.language,
+                      awards: m.awards,
+                      popularity: m.popularity,
+                      kind: 'MOVIE',
+                  };
         this.movieProviderService.update(movie.id, request).subscribe({
             next: (updated) => {
                 this.toast.success('Metadata actualizada.');

@@ -10,6 +10,7 @@
                 @if (movie(); as movie) {
                     <app-media-form
                         [initial]="movie"
+                        [initialKind]="movie.kind ?? 'MOVIE'"
                         submitLabel="Guardar"
                         (submitted)="onSave($event)"
                     >

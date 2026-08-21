@@ -16,6 +16,10 @@
                     <button (click)="statusFilter.set('ALL')" [class.menu-active]="statusFilter() === 'ALL'">Todos</button>
                     <button (click)="statusFilter.set('READY')" [class.menu-active]="statusFilter() === 'READY'">READY</button>
                     <button (click)="statusFilter.set('DRAFT')" [class.menu-active]="statusFilter() === 'DRAFT'">DRAFT</button>
+                    <span class="menu-label">Kind</span>
+                    <button (click)="kindFilter.set('ALL')" [class.menu-active]="kindFilter() === 'ALL'">Todos</button>
+                    <button (click)="kindFilter.set('MOVIE')" [class.menu-active]="kindFilter() === 'MOVIE'">MOVIE</button>
+                    <button (click)="kindFilter.set('OTHER')" [class.menu-active]="kindFilter() === 'OTHER'">OTHER</button>
                     <span class="menu-label">Source</span>
                     <button (click)="sourceFilter.set('ALL')" [class.menu-active]="sourceFilter() === 'ALL'">Todas</button>
                     <button (click)="sourceFilter.set('LOCAL')" [class.menu-active]="sourceFilter() === 'LOCAL'">LOCAL</button>

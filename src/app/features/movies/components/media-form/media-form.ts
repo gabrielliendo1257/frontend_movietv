@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, output, signal } from '@angular/core';
+import { Component, effect, inject, input, OnInit, output, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MovieMetadata } from '@features/uploads/models/movie-metadata';
@@ -16,10 +16,11 @@ export interface MediaFormValue {
     templateUrl: './media-form.html',
     styleUrl: './media-form.css',
 })
-export class MediaForm {
+export class MediaForm implements OnInit {
     private readonly fb = inject(NonNullableFormBuilder);
 
     readonly initial = input<MovieMetadata | null>(null);
+    readonly initialKind = input<MediaKind>('MOVIE');
     readonly submitLabel = input('Guardar');
     readonly externalDisabled = input(false);
 
@@ -60,6 +61,10 @@ export class MediaForm {
         this.form.valueChanges
             .pipe(takeUntilDestroyed())
             .subscribe(() => this.valueChange.emit(this.form.getRawValue() as MovieMetadata));
+    }
+
+    ngOnInit(): void {
+        this.kind.set(this.initialKind());
     }
 
     setKind(value: MediaKind): void {
