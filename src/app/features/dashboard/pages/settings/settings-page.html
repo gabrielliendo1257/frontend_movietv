@@ -1,14 +1,37 @@
 <section class="settings">
     <h1 class="page-title">Settings</h1>
 
-    <div class="section">
-        <h2 class="section-title">Storage</h2>
-        <p class="muted">Configura las raíces permitidas y las fuentes de almacenamiento.</p>
-        <p class="muted">Próximamente: raíces de biblioteca, S3, cuotas.</p>
-    </div>
+    @if (home(); as home) {
+        <div class="section">
+            <h2 class="section-title">Profile</h2>
+            <div class="profile-row">
+                <span class="label">Usuario</span>
+                <span class="value">{{ home.profile.username }}</span>
+            </div>
+            <div class="profile-row">
+                <span class="label">Email</span>
+                <span class="value">{{ home.profile.email }}</span>
+            </div>
+            <div class="profile-row">
+                <span class="label">Plan</span>
+                <span class="value">{{ home.profile.plan }}</span>
+            </div>
+        </div>
 
-    <div class="section">
-        <h2 class="section-title">Profile</h2>
-        <p class="muted">Gestiona tu cuenta en <a class="link" href="/account">Mi cuenta</a>.</p>
-    </div>
+        <div class="section">
+            <h2 class="section-title">Storage</h2>
+            <div class="quota-track">
+                <div class="quota-fill" [style.width.%]="quotaPercent(home.quota)"></div>
+            </div>
+            <p class="muted">
+                {{ formatBytes(home.quota.usedBytes) }} de {{ formatBytes(home.quota.quotaBytes) }}
+                ({{ quotaPercent(home.quota) }}%)
+            </p>
+            <p class="muted">Próximamente: raíces de biblioteca, S3, límites.</p>
+        </div>
+    } @else {
+        <div class="section">
+            <p class="muted">No se pudo cargar la configuración.</p>
+        </div>
+    }
 </section>
