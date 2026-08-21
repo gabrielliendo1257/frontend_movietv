@@ -1,0 +1,61 @@
+@if (isOpen()) {
+    <div class="backdrop" (click)="close()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="header">
+                <h2 class="title">Identify</h2>
+                <button class="close" (click)="close()">✕</button>
+            </div>
+
+            <div class="body">
+                @if (asset(); as asset) {
+                    <p class="asset-name">{{ asset.relativePath }}</p>
+                }
+
+                <div class="kind-row">
+                    <span class="label">Media type</span>
+                    <div class="kind-toggle">
+                        <button type="button" class="kind-btn" [class.active]="kind() === 'MOVIE'" (click)="setKind('MOVIE')">Movie</button>
+                        <button type="button" class="kind-btn" [class.active]="kind() === 'OTHER'" (click)="setKind('OTHER')">Other</button>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label" for="id-title">Title</label>
+                    <input
+                        id="id-title"
+                        class="input"
+                        type="text"
+                        placeholder="Título"
+                        [ngModel]="query()"
+                        (ngModelChange)="onQuery($event)"
+                        (keydown.enter)="confirm()"
+                    />
+                </div>
+
+                @if (kind() === 'MOVIE' && results().length) {
+                    <ul class="results">
+                        @for (result of results(); track result.tmdb_id) {
+                            <li (click)="pickResult(result)">
+                                {{ result.title }}
+                                @if (result.year) {
+                                    <span class="muted">({{ result.year }})</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+
+                @if (kind() === 'MOVIE') {
+                    <p class="hint">Escribe un título para buscar en TMDB y autocompletar.</p>
+                }
+
+                <div class="actions">
+                    <button class="btn" (click)="close()" [disabled]="submitting()">Cancelar</button>
+                    <button class="btn btn-primary" (click)="confirm()" [disabled]="submitting() || !query().trim()">
+                        {{ submitting() ? 'Identificando...' : 'Identificar' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}

@@ -1,19 +1,15 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { debounceTime, distinctUntilChanged, filter, map, Subject, switchMap } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
 import { ToastService } from '@core/services/toast.service';
 import { LibrariesService } from '@features/libraries/services/libraries.service';
 import { Library, MediaAsset } from '@features/libraries/models/library';
-import { EnrichmentSearchResult } from '@features/movies/models/enrichment';
-import { MovieProviderService } from '@features/movies/services/movie-provider.service';
 import { MovieVisibility } from '@features/movies/models/web-movie';
 import { VisibilityModal } from '@features/movies/components/visibility-modal/visibility-modal';
 import { VisibilityJob } from '@features/movies/models/visibility';
+import { IdentifyModal } from '@features/libraries/components/identify-modal/identify-modal';
 
-const MIN_QUERY_LENGTH = 2;
-const SEARCH_DEBOUNCE_MS = 300;
 const PAGE_SIZE = 20;
 
 interface VisibilityTarget {
@@ -25,18 +21,15 @@ interface VisibilityTarget {
 
 @Component({
     selector: 'app-libraries-page',
-    imports: [FormsModule, VisibilityModal],
+    imports: [FormsModule, VisibilityModal, IdentifyModal],
     templateUrl: './libraries-page.html',
     styleUrl: './libraries-page.css',
 })
 export class LibrariesPage {
     private readonly librariesService = inject(LibrariesService);
-    private readonly movieProviderService = inject(MovieProviderService);
     private readonly toast = inject(ToastService);
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
-
-    private readonly identifySearchSubject = new Subject<string>();
 
     readonly isLogged = this.authService.isLogged;
 
@@ -53,10 +46,8 @@ export class LibrariesPage {
     readonly loadingAssets = signal(false);
     readonly unidentifiedCount = signal(0);
 
-    readonly identifyAssetId = signal<number | null>(null);
-    readonly identifyQuery = signal('');
-    readonly identifyResults = signal<EnrichmentSearchResult[]>([]);
-    readonly identifying = signal(false);
+    readonly identifyTarget = signal<MediaAsset | null>(null);
+    readonly identifyOpen = signal(false);
 
     readonly visibilityTarget = signal<VisibilityTarget | null>(null);
 
@@ -83,20 +74,7 @@ export class LibrariesPage {
         return selected ? `Biblioteca #${selected.id} (${selected.type})` : '';
     });
 
-    constructor() {
-        this.identifySearchSubject
-            .pipe(
-                debounceTime(SEARCH_DEBOUNCE_MS),
-                map((value) => value.trim()),
-                filter((query) => query.length >= MIN_QUERY_LENGTH),
-                distinctUntilChanged(),
-                switchMap((query) => this.movieProviderService.enrichmentSearch(query)),
-            )
-            .subscribe({
-                next: (results) => this.identifyResults.set(results),
-                error: () => this.identifyResults.set([]),
-            });
-    }
+    constructor() {}
 
     ngOnInit(): void {
         this.loadLibraries();
@@ -151,7 +129,6 @@ export class LibrariesPage {
     openScan(library: Library): void {
         this.selected.set(library);
         this.selectedAssetIds.set([]);
-        this.identifyAssetId.set(null);
         this.loadAssets(library.id, 0);
         this.loadCounts(library.id);
     }
@@ -279,45 +256,20 @@ export class LibrariesPage {
         }
     }
 
-    onIdentifyQuery(value: string): void {
-        this.identifyQuery.set(value);
-        this.identifySearchSubject.next(value);
+    openIdentify(asset: MediaAsset): void {
+        this.identifyTarget.set(asset);
+        this.identifyOpen.set(true);
     }
 
-    identifyWithTitle(asset: MediaAsset): void {
-        const title = this.identifyQuery().trim();
-        if (!title) {
-            this.toast.warning('Escribe un título o selecciona un resultado');
-            return;
+    onIdentified(): void {
+        this.identifyOpen.set(false);
+        this.identifyTarget.set(null);
+        this.toast.success('Asset identificado');
+        const selected = this.selected();
+        if (selected) {
+            this.loadAssets(selected.id, this.assetsPage());
+            this.loadCounts(selected.id);
         }
-        this.runIdentify(asset, { title });
-    }
-
-    identifyWithResult(asset: MediaAsset, result: EnrichmentSearchResult): void {
-        this.identifyQuery.set(result.title);
-        this.runIdentify(asset, { tmdbId: result.tmdb_id });
-    }
-
-    private runIdentify(asset: MediaAsset, request: { title?: string; tmdbId?: number }): void {
-        this.identifying.set(true);
-        this.librariesService.identify(asset.id, request).subscribe({
-            next: () => {
-                this.identifying.set(false);
-                this.identifyAssetId.set(null);
-                this.identifyQuery.set('');
-                this.identifyResults.set([]);
-                this.toast.success(`Asset identificado (movie ${request.tmdbId ?? 'por título'})`);
-                const selected = this.selected();
-                if (selected) {
-                    this.loadAssets(selected.id, this.assetsPage());
-                    this.loadCounts(selected.id);
-                }
-            },
-            error: () => {
-                this.identifying.set(false);
-                this.toast.error('No se pudo identificar el asset');
-            },
-        });
     }
 
     private closeMenus(): void {

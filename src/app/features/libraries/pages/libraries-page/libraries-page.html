@@ -148,7 +148,7 @@
                                         </td>
                                         <td class="col-actions">
                                             @if (asset.status === 'UNIDENTIFIED') {
-                                                <button class="btn btn-sm" (click)="identifyAssetId.set(asset.id)">
+                                                <button class="btn btn-sm" (click)="openIdentify(asset)">
                                                     Identificar
                                                 </button>
                                             } @else {
@@ -162,43 +162,6 @@
                                             }
                                         </td>
                                     </tr>
-
-                                    @if (identifyAssetId() === asset.id) {
-                                        <tr class="identify-row">
-                                            <td colspan="6">
-                                                <div class="identify-box">
-                                                    <input
-                                                        class="identify-input"
-                                                        type="text"
-                                                        placeholder="Buscar en TMDB..."
-                                                        [ngModel]="identifyQuery()"
-                                                        (ngModelChange)="onIdentifyQuery($event)"
-                                                        (keydown.enter)="identifyWithTitle(asset)"
-                                                    />
-                                                    <button
-                                                        class="btn btn-primary"
-                                                        (click)="identifyWithTitle(asset)"
-                                                        [disabled]="identifying()"
-                                                    >
-                                                        {{ identifying() ? 'Identificando...' : 'Identificar' }}
-                                                    </button>
-                                                    <button class="btn" (click)="identifyAssetId.set(null)">Cancelar</button>
-                                                    @if (identifyResults().length) {
-                                                        <ul class="identify-results">
-                                                            @for (result of identifyResults(); track result.tmdb_id) {
-                                                                <li (click)="identifyWithResult(asset, result)">
-                                                                    {{ result.title }}
-                                                                    @if (result.year) {
-                                                                        <span class="muted">({{ result.year }})</span>
-                                                                    }
-                                                                </li>
-                                                            }
-                                                        </ul>
-                                                    }
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
                                 }
                             </tbody>
                         </table>
@@ -239,5 +202,11 @@
                 (done)="onVisibilityDone($event)"
             />
         }
+
+        <app-identify-modal
+            [(isOpen)]="identifyOpen"
+            [asset]="identifyTarget()"
+            (identified)="onIdentified()"
+        />
     }
 </section>
