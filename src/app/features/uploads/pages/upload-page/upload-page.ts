@@ -1,11 +1,16 @@
 import { Component, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ElementRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, Subject } from 'rxjs';
 import { ToastService } from '@core/services/toast.service';
 import { UploadFacade } from '@features/uploads/services/upload-facade';
 import { ACTIVE_UPLOAD_STATES } from '@features/uploads/models/upload-task';
 import { MovieMetadata } from '@features/uploads/models/movie-metadata';
+import { UploadSessionPersistence } from '@features/uploads/services/upload-session-persistence';
 import { MediaForm, MediaFormValue } from '@features/movies/components/media-form/media-form';
 import { MovieSearchModal } from '@features/uploads/components/movie-search-modal/movie-search-modal';
+
+const DRAFT_METADATA_KEY = 'movie-draft';
 
 @Component({
     selector: 'app-upload-page',
@@ -16,6 +21,9 @@ import { MovieSearchModal } from '@features/uploads/components/movie-search-moda
 export class UploadPage {
     private readonly uploadFacade = inject(UploadFacade);
     private readonly toast = inject(ToastService);
+    private readonly fileStorage = inject(UploadSessionPersistence);
+
+    private readonly draftSubject = new Subject<MovieMetadata>();
 
     readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 
@@ -39,12 +47,17 @@ export class UploadPage {
     readonly error = computed(() => this.task()?.error ?? null);
 
     constructor() {
+        this.restoreDrafts();
+
+        this.draftSubject
+            .pipe(takeUntilDestroyed(), debounceTime(400))
+            .subscribe((metadata) => localStorage.setItem(DRAFT_METADATA_KEY, JSON.stringify(metadata)));
+
         effect(() => {
             const task = this.task();
             if (task?.state === 'completed') {
                 this.taskId.set(null);
-                this.file.set(null);
-                this.metadata.set(null);
+                this.clearDrafts();
                 this.toast.success('Media subida correctamente.');
             } else if (task?.state === 'error') {
                 this.taskId.set(null);
@@ -62,6 +75,7 @@ export class UploadPage {
         const file = input.files?.[0];
         if (!file) return;
         this.file.set(file);
+        void this.fileStorage.saveDraftFile(file).catch(() => undefined);
         input.value = '';
     }
 
@@ -72,6 +86,10 @@ export class UploadPage {
     onMovieSelected(movie: MovieMetadata): void {
         this.metadata.set(movie);
         this.searchOpen.set(false);
+    }
+
+    onMetadataChange(metadata: MovieMetadata): void {
+        this.draftSubject.next(metadata);
     }
 
     onSubmit(value: MediaFormValue): void {
@@ -87,5 +105,27 @@ export class UploadPage {
         if (bytes < 1024) return bytes + ' B';
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    private restoreDrafts(): void {
+        const raw = localStorage.getItem(DRAFT_METADATA_KEY);
+        if (raw) {
+            try {
+                this.metadata.set(JSON.parse(raw) as MovieMetadata);
+            } catch {
+                localStorage.removeItem(DRAFT_METADATA_KEY);
+            }
+        }
+
+        void this.fileStorage.loadDraftFile().then((file) => {
+            if (file) this.file.set(file);
+        });
+    }
+
+    private clearDrafts(): void {
+        localStorage.removeItem(DRAFT_METADATA_KEY);
+        this.metadata.set(null);
+        this.file.set(null);
+        void this.fileStorage.clearDraftFile().catch(() => undefined);
     }
 }
