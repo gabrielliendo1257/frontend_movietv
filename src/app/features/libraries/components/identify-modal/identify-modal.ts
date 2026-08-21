@@ -69,7 +69,9 @@ export class IdentifyModal {
         if (!title) return;
 
         this.submitting.set(true);
-        this.librariesService.identify(asset.id, { title, tmdbId: request?.tmdbId }).subscribe({
+        this.librariesService
+            .identify(asset.id, { title, tmdbId: request?.tmdbId, kind: this.kind() })
+            .subscribe({
             next: () => {
                 this.submitting.set(false);
                 this.query.set('');

@@ -1,3 +1,5 @@
+import { MediaKind } from '@features/movies/models/media-kind';
+
 export interface Library {
     id: number;
     type: string;
@@ -27,4 +29,5 @@ export interface MediaAssetPage {
 export interface IdentifyAssetRequest {
     title?: string;
     tmdbId?: number;
+    kind?: MediaKind;
 }
