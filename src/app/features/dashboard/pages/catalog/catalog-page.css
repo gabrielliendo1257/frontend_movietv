@@ -130,7 +130,22 @@
 .table-wrap {
     border: 1px solid var(--color-border);
     border-radius: 10px;
-    overflow: hidden;
+}
+
+.catalog-table thead th:first-child {
+    border-top-left-radius: 10px;
+}
+
+.catalog-table thead th:last-child {
+    border-top-right-radius: 10px;
+}
+
+.catalog-table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 10px;
+}
+
+.catalog-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 10px;
 }
 
 .catalog-table {
