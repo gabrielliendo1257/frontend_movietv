@@ -1,0 +1,32 @@
+<section class="edit-media">
+    <div class="head">
+        <div>
+            <h1 class="page-title">Edit Media</h1>
+            <p class="subtitle">{{ movie()?.title || 'Media' }}</p>
+        </div>
+        <button class="btn" (click)="openSearch()">Autocomplete</button>
+    </div>
+
+    @if (loading()) {
+        <p class="muted">Cargando...</p>
+    } @else if (notFound()) {
+        <div class="empty-state">
+            <p>Media no encontrada.</p>
+        </div>
+    } @else {
+        <app-media-form
+            [initial]="metadata()"
+            [initialKind]="initialKind()"
+            [submitLabel]="saving() ? 'Guardando...' : 'Guardar'"
+            [externalDisabled]="saving()"
+            (submitted)="onSave($event)"
+        >
+            <button cancel class="btn" (click)="cancel()">Cancelar</button>
+        </app-media-form>
+    }
+
+    <app-movie-search-modal
+        [(isOpen)]="searchOpen"
+        (movieSelected)="onMovieSelected($event)"
+    />
+</section>

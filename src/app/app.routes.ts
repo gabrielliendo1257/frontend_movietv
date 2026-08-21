@@ -62,6 +62,11 @@ export const routes: Routes = [
                             import('./features/dashboard/pages/catalog/catalog-page').then(m => m.CatalogPage),
                     },
                     {
+                        path: 'catalog/:id/edit',
+                        loadComponent: () =>
+                            import('./features/dashboard/pages/edit-media/edit-media-page').then(m => m.EditMediaPage),
+                    },
+                    {
                         path: 'assets',
                         loadComponent: () =>
                             import('./features/dashboard/pages/assets/assets-page').then(m => m.AssetsPage),

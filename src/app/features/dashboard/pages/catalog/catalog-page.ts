@@ -1,11 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MovieProviderService } from '@features/movies/services/movie-provider.service';
 import { WebMovie } from '@features/movies/models/web-movie';
 import { MovieVisibility } from '@features/movies/models/web-movie';
 import { VisibilityModal } from '@features/movies/components/visibility-modal/visibility-modal';
 import { VisibilityJob } from '@features/movies/models/visibility';
-import { MediaEditModal } from '@features/dashboard/components/media-edit-modal/media-edit-modal';
 import { ToastService } from '@core/services/toast.service';
 
 type StatusFilter = 'ALL' | 'DRAFT' | 'READY';
@@ -14,13 +14,14 @@ type KindFilter = 'ALL' | 'MOVIE' | 'OTHER';
 
 @Component({
     selector: 'app-catalog-page',
-    imports: [FormsModule, VisibilityModal, MediaEditModal],
+    imports: [FormsModule, VisibilityModal],
     templateUrl: './catalog-page.html',
     styleUrl: './catalog-page.css',
 })
 export class CatalogPage {
     private readonly movieProviderService = inject(MovieProviderService);
     private readonly toast = inject(ToastService);
+    private readonly router = inject(Router);
 
     readonly movies = signal<WebMovie[]>([]);
     readonly query = signal('');
@@ -29,8 +30,6 @@ export class CatalogPage {
     readonly kindFilter = signal<KindFilter>('ALL');
     readonly selectedIds = signal<number[]>([]);
     readonly visibilityTarget = signal<{ label: string; movieIds: number[]; initialVisibility: MovieVisibility } | null>(null);
-    readonly editOpen = signal(false);
-    readonly editingMovie = signal<WebMovie | null>(null);
 
     readonly kindOf = (movie: WebMovie): string => movie.kind ?? 'MOVIE';
 
@@ -108,8 +107,7 @@ export class CatalogPage {
 
     editMovie(movie: WebMovie): void {
         this.closeMenus();
-        this.editingMovie.set(movie);
-        this.editOpen.set(true);
+        this.router.navigate(['/dashboard/catalog', movie.id, 'edit']);
     }
 
     unlinkProvider(movie: WebMovie): void {
@@ -121,10 +119,6 @@ export class CatalogPage {
             },
             error: () => this.toast.error('No se pudo desvincular el proveedor.'),
         });
-    }
-
-    onEdited(): void {
-        this.reload();
     }
 
     private reload(): void {
