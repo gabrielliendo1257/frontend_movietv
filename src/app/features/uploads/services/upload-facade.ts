@@ -61,7 +61,7 @@ export class UploadFacade {
         kind: MediaKind,
         access?: InitialAccess,
     ): string {
-        const uploadId = crypto.randomUUID();
+        const uploadId = newIdempotencyKey();
 
         this.tasks.update((tasks) => [
             {
@@ -427,4 +427,30 @@ function toMessage(error: unknown): string {
     }
     if (error instanceof Error) return error.message;
     return typeof error === 'string' ? error : 'Upload failed.';
+}
+
+/**
+ * Clave de idempotencia del proceso. `crypto.randomUUID` solo existe en
+ * contextos seguros (HTTPS/localhost); al servir por HTTP en LAN caemos a
+ * UUID v4 vía getRandomValues, disponible en cualquier contexto.
+ */
+function newIdempotencyKey(): string {
+    if (typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+
+    if (typeof crypto.getRandomValues === 'function') {
+        return '10000000-1000-4000-8000-100000000000'.replace(
+            /[018]/g,
+            (position) =>
+                (
+                    +position ^
+                    (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (+position / 4)))
+                ).toString(16),
+        );
+    }
+
+    // Último recurso para entornos sin Web Crypto (no debería ocurrir).
+    const random = () => Math.random().toString(36).slice(2, 10);
+    return `${Date.now()}-${random()}-${random()}`;
 }
