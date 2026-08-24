@@ -1,20 +1,29 @@
 import { Component, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ElementRef } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, Subject } from 'rxjs';
 import { ToastService } from '@core/ui/toast.service';
 import { UploadFacade } from '@features/uploads/services/upload-facade';
 import { ACTIVE_UPLOAD_STATES } from '@features/uploads/models/upload-task';
+import { InitialAccess, InitialVisibility } from '@features/uploads/models/add-media';
 import { MovieMetadata } from '@features/movies/models/movie-metadata';
 import { UploadSessionPersistence } from '@features/uploads/services/upload-session-persistence';
 import { MediaForm, MediaFormValue } from '@features/movies/components/media-form/media-form';
 import { MovieSearchModal } from '@features/uploads/components/movie-search-modal/movie-search-modal';
+import { ChipsInput } from '@features/uploads/components/chips-input/chips-input';
 
 const DRAFT_METADATA_KEY = 'movie-draft';
 
+const VISIBILITY_OPTIONS: { value: InitialVisibility; label: string; hint: string }[] = [
+    { value: 'PRIVATE', label: 'Privada', hint: 'Solo tú puedes verla' },
+    { value: 'PUBLIC', label: 'Pública', hint: 'Visible para todos' },
+    { value: 'SHARED', label: 'Compartida', hint: 'Solo los usuarios indicados' },
+];
+
 @Component({
     selector: 'app-upload-page',
-    imports: [MediaForm, MovieSearchModal],
+    imports: [FormsModule, MediaForm, MovieSearchModal, ChipsInput],
     templateUrl: './upload-page.html',
     styleUrl: './upload-page.css',
 })
@@ -27,10 +36,16 @@ export class UploadPage {
 
     readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 
+    readonly visibilityOptions = VISIBILITY_OPTIONS;
+
     readonly file = signal<File | null>(null);
     readonly metadata = signal<MovieMetadata | null>(null);
     readonly searchOpen = signal(false);
     readonly taskId = signal<string | null>(null);
+
+    // Acceso inicial del contenido (el BFF lo aplica al crear el draft).
+    readonly visibility = signal<InitialVisibility>('PRIVATE');
+    readonly sharedWith = signal<string[]>([]);
 
     readonly task = computed(() => {
         const id = this.taskId();
@@ -56,11 +71,10 @@ export class UploadPage {
         effect(() => {
             const task = this.task();
             if (task?.state === 'completed') {
-                this.taskId.set(null);
-                this.clearDrafts();
+                this.resetAfterFinish();
                 this.toast.success('Media subida correctamente.');
             } else if (task?.state === 'failed') {
-                this.taskId.set(null);
+                this.resetAfterFinish();
                 this.toast.error(task.error ?? 'Upload failed.');
             }
         });
@@ -98,13 +112,39 @@ export class UploadPage {
             this.toast.warning('Selecciona un archivo primero.');
             return;
         }
-                this.taskId.set(this.uploadFacade.startUpload(file, value.metadata, value.kind));
+
+        const access = this.buildAccess();
+        if (access === null) return;
+
+        this.taskId.set(this.uploadFacade.startUpload(file, value.metadata, value.kind, access));
     }
 
     formatFileSize(bytes: number): string {
         if (bytes < 1024) return bytes + ' B';
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    /** SHARED exige al menos un usuario; PRIVATE/PUBLIC no envían nada extra. */
+    private buildAccess(): InitialAccess | null {
+        const visibility = this.visibility();
+
+        if (visibility === 'SHARED') {
+            if (!this.sharedWith().length) {
+                this.toast.warning('Añade al menos un usuario para compartir.');
+                return null;
+            }
+            return { visibility, sharedWith: [...this.sharedWith()] };
+        }
+
+        return { visibility };
+    }
+
+    private resetAfterFinish(): void {
+        this.taskId.set(null);
+        this.clearDrafts();
+        this.visibility.set('PRIVATE');
+        this.sharedWith.set([]);
     }
 
     private restoreDrafts(): void {

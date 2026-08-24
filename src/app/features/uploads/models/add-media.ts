@@ -43,7 +43,9 @@ export interface MovieCandidatePreview {
 export interface MovieDraft {
     title: string;
     originalTitle?: string;
+    year?: number | null;
     genres?: string[];
+    popularity?: number | null;
     duration?: string;
     director?: string;
     cast?: string[];
@@ -56,6 +58,14 @@ export interface MovieDraft {
     kind?: MediaKind;
 }
 
+/** Visibilidad inicial del contenido (la política final la valida Movies). */
+export type InitialVisibility = 'PRIVATE' | 'PUBLIC' | 'SHARED';
+
+export interface InitialAccess {
+    visibility: InitialVisibility;
+    sharedWith?: string[];
+}
+
 export interface StartAddMediaCommand {
     file: {
         filename: string;
@@ -66,10 +76,7 @@ export interface StartAddMediaCommand {
         providerId: number;
         draft: MovieDraft;
     };
-    access?: {
-        visibility: string;
-        sharedWith?: string[];
-    };
+    access?: InitialAccess;
     idempotencyKey: string;
 }
 

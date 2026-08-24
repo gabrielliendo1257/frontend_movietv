@@ -43,6 +43,42 @@
         (valueChange)="onMetadataChange($event)"
     />
 
+    <section class="access-section" [class.disabled]="isUploading()">
+        <h2 class="access-title">Acceso inicial</h2>
+        <p class="access-hint">Quién podrá ver este contenido al terminar la subida.</p>
+
+        <div class="visibility-options" role="radiogroup" aria-label="Visibilidad inicial">
+            @for (option of visibilityOptions; track option.value) {
+                <button
+                    class="visibility-option"
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="visibility() === option.value"
+                    [class.selected]="visibility() === option.value"
+                    [disabled]="isUploading()"
+                    (click)="visibility.set(option.value)"
+                >
+                    <span class="option-label">{{ option.label }}</span>
+                    <span class="option-hint">{{ option.hint }}</span>
+                </button>
+            }
+        </div>
+
+        @if (visibility() === 'SHARED') {
+            <div class="shared-with">
+                <label class="shared-label" for="sharedWith">Compartir con</label>
+                <app-chips-input
+                    id="sharedWith"
+                    [minChips]="1"
+                    placeholder="Usuario y Enter (p. ej. admin)"
+                    emptyHint="Aún no indicaste usuarios."
+                    [ngModel]="sharedWith()"
+                    (ngModelChange)="sharedWith.set($event)"
+                />
+            </div>
+        }
+    </section>
+
     <app-movie-search-modal
         [(isOpen)]="searchOpen"
         (movieSelected)="onMovieSelected($event)"

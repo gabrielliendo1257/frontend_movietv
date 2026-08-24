@@ -1,5 +1,6 @@
 import { MediaKind } from '@features/movies/models/media-kind';
 import { MovieMetadata } from '@features/movies/models/movie-metadata';
+import { InitialAccess } from '@features/uploads/models/add-media';
 
 /** Estados que le interesan a la UX; el detalle fino vive en AddMediaPhase del BFF. */
 export type UploadState =
@@ -27,5 +28,7 @@ export interface UploadTask {
     readonly state: UploadState;
     readonly metadata: MovieMetadata;
     readonly kind: MediaKind;
+    /** Preferencia de acceso con la que se inició (o iniciará) el proceso. */
+    readonly access?: InitialAccess;
     readonly error?: string | null;
 }

@@ -19,6 +19,7 @@ import { MediaKind } from '@features/movies/models/media-kind';
 import { MovieMetadata } from '@features/movies/models/movie-metadata';
 import {
     AddMediaProcess,
+    InitialAccess,
     MovieDraft,
     StartAddMediaCommand,
     UploadInstructions,
@@ -54,7 +55,12 @@ export class UploadFacade {
         this.resumePending();
     }
 
-    startUpload(file: File, metadata: MovieMetadata, kind: MediaKind): string {
+    startUpload(
+        file: File,
+        metadata: MovieMetadata,
+        kind: MediaKind,
+        access?: InitialAccess,
+    ): string {
         const uploadId = crypto.randomUUID();
 
         this.tasks.update((tasks) => [
@@ -68,12 +74,13 @@ export class UploadFacade {
                 state: 'starting',
                 metadata,
                 kind,
+                access,
             },
             ...tasks,
         ]);
 
         void this.persistence.saveFile(uploadId, file).catch(() => undefined);
-        this.runStart(uploadId, file, metadata, kind);
+        this.runStart(uploadId, file);
 
         return uploadId;
     }
@@ -97,7 +104,7 @@ export class UploadFacade {
                             ? this.addMediaApi.status(task.addMediaId).pipe(
                                   switchMap((process) => this.continueFrom(uploadId, process)),
                               )
-                            : this.startProcess(uploadId, file, task.metadata, task.kind);
+                            : this.startProcess(uploadId, file);
                     }),
                     catchError((error) => {
                         this.fail(uploadId, error);
@@ -137,15 +144,10 @@ export class UploadFacade {
     // ─── Flujo principal ───
 
     /** Lanza el proceso de alta y gestiona su ciclo de vida. */
-    private runStart(
-        uploadId: string,
-        file: File,
-        metadata: MovieMetadata,
-        kind: MediaKind,
-    ): void {
+    private runStart(uploadId: string, file: File): void {
         this.trackSubscription(
             uploadId,
-            this.startProcess(uploadId, file, metadata, kind)
+            this.startProcess(uploadId, file)
                 .pipe(
                     catchError((error) => {
                         this.fail(uploadId, error);
@@ -156,18 +158,15 @@ export class UploadFacade {
         );
     }
 
-    private startProcess(
-        uploadId: string,
-        file: File,
-        metadata: MovieMetadata,
-        kind: MediaKind,
-    ): Observable<unknown> {
-        const command = toCommand(uploadId, file, metadata, kind);
+    private startProcess(uploadId: string, file: File): Observable<unknown> {
+        // La intención completa vive en la tarea: draft + kind + acceso inicial.
+        const task = this.taskById(uploadId);
+        if (!task) return EMPTY;
+
+        const command = toCommand(uploadId, file, task.metadata, task.kind, task.access);
 
         return this.addMediaApi.start(command).pipe(
-            tap((process) =>
-                this.persistence.savePending(toPending(uploadId, file.name, metadata, kind, process)),
-            ),
+            tap((process) => this.persistence.savePending(toPending(uploadId, task, process))),
             switchMap((process) => this.continueFrom(uploadId, process)),
         );
     }
@@ -285,6 +284,7 @@ export class UploadFacade {
                 state: 'starting',
                 metadata: pendingMetadata(pending),
                 kind: pending.draft.kind ?? 'MOVIE',
+                access: pending.access,
             },
             ...tasks,
         ]);
@@ -343,6 +343,7 @@ function toCommand(
     file: File,
     metadata: MovieMetadata,
     kind: MediaKind,
+    access?: InitialAccess,
 ): StartAddMediaCommand {
     return {
         file: {
@@ -354,24 +355,24 @@ function toCommand(
             providerId: metadata.id,
             draft: toDraft(metadata, kind),
         },
+        access,
         idempotencyKey,
     };
 }
 
 function toPending(
     idempotencyKey: string,
-    fileName: string,
-    metadata: MovieMetadata,
-    kind: MediaKind,
+    task: UploadTask,
     process: AddMediaProcess,
 ): PendingAddMedia {
     return {
         idempotencyKey,
         addMediaId: process.addMediaId,
         movieId: process.movieId,
-        fileName,
-        providerId: metadata.id,
-        draft: toDraft(metadata, kind),
+        fileName: task.fileName,
+        providerId: task.metadata.id,
+        draft: toDraft(task.metadata, task.kind),
+        access: task.access,
     };
 }
 
@@ -379,7 +380,9 @@ function toDraft(metadata: MovieMetadata, kind: MediaKind): MovieDraft {
     return {
         title: metadata.title,
         originalTitle: metadata.originalTitle,
+        year: metadata.year,
         genres: metadata.genres,
+        popularity: metadata.popularity,
         duration: metadata.duration,
         director: metadata.director,
         cast: metadata.cast,
@@ -399,9 +402,9 @@ function pendingMetadata(pending: PendingAddMedia): MovieMetadata {
         id: pending.providerId,
         title: pending.draft.title,
         originalTitle: pending.draft.originalTitle ?? '',
-        year: null,
+        year: pending.draft.year ?? null,
         genres: pending.draft.genres ?? [],
-        popularity: 5,
+        popularity: pending.draft.popularity ?? 5,
         duration: pending.draft.duration ?? '',
         director: pending.draft.director ?? '',
         cast: pending.draft.cast ?? [],

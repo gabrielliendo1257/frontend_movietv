@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { MovieDraft } from '@features/uploads/models/add-media';
+import { InitialAccess, MovieDraft } from '@features/uploads/models/add-media';
 
 const PENDING_KEY = 'pending-add-media';
 const DB_NAME = 'movieflix-uploads';
@@ -14,6 +14,7 @@ export interface PendingAddMedia {
     fileName: string;
     providerId: number;
     draft: MovieDraft;
+    access?: InitialAccess;
 }
 
 @Injectable({ providedIn: 'root' })
