@@ -58,6 +58,57 @@
     color: var(--color-heading);
 }
 
+.identify-required {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--color-muted);
+}
+
+.identified-box {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.identified-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-primary);
+}
+
+.identified-title {
+    font-size: 0.88rem;
+    color: var(--color-heading);
+}
+
+.identified-spacer {
+    flex: 1;
+}
+
+.btn-small {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.78rem;
+}
+
+.identified-remove {
+    border: none;
+    background: none;
+    color: var(--color-muted);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.identified-remove:hover:not(:disabled) {
+    color: var(--color-danger);
+}
+
 .muted {
     color: var(--color-muted);
     font-size: 0.8rem;

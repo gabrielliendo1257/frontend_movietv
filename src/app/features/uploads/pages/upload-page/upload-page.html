@@ -22,6 +22,31 @@
         }
     </div>
 
+    @if (identified(); as picked) {
+        <div class="identified-box">
+            <span class="identified-label">Identificada</span>
+            <strong class="identified-title">{{ picked.title }}</strong>
+            @if (picked.year) {
+                <span class="muted">{{ picked.year }}</span>
+            }
+            <span class="identified-spacer"></span>
+            <button class="btn btn-small" type="button" [disabled]="isUploading()" (click)="openSearch()">
+                Cambiar
+            </button>
+            <button
+                class="btn-small identified-remove"
+                type="button"
+                [disabled]="isUploading()"
+                (click)="clearCandidate()"
+                aria-label="Quitar candidato"
+            >×</button>
+        </div>
+    } @else {
+        <p class="identify-required">
+            Identifica la película con <strong>Autocomplete</strong> para poder subirla.
+        </p>
+    }
+
     @if (isUploading()) {
         <div class="progress-wrap">
             <div class="progress-track">

@@ -43,6 +43,9 @@ export class UploadPage {
     readonly searchOpen = signal(false);
     readonly taskId = signal<string | null>(null);
 
+    /** Candidato TMDB identificado; sin él el BFF rechaza el alta (INVALID_INTENT). */
+    readonly identified = signal<{ providerId: number; title: string; year: number | null } | null>(null);
+
     // Acceso inicial del contenido (el BFF lo aplica al crear el draft).
     readonly visibility = signal<InitialVisibility>('PRIVATE');
     readonly sharedWith = signal<string[]>([]);
@@ -99,7 +102,17 @@ export class UploadPage {
 
     onMovieSelected(movie: MovieMetadata): void {
         this.metadata.set(movie);
+        this.identified.set({
+            providerId: movie.id,
+            title: movie.title,
+            year: movie.year ?? parseYear(movie.release_date),
+        });
         this.searchOpen.set(false);
+    }
+
+    clearCandidate(): void {
+        this.identified.set(null);
+        this.metadata.set(null);
     }
 
     onMetadataChange(metadata: MovieMetadata): void {
@@ -113,10 +126,20 @@ export class UploadPage {
             return;
         }
 
+        const candidate = this.identified();
+        if (!candidate) {
+            // Espejo del INVALID_INTENT del BFF: sin candidato no se crea nada.
+            this.toast.warning('Selecciona un candidato primero (Autocomplete).');
+            return;
+        }
+
         const access = this.buildAccess();
         if (access === null) return;
 
-        this.taskId.set(this.uploadFacade.startUpload(file, value.metadata, value.kind, access));
+        // El form no conoce el id del proveedor: la identidad viene del candidato.
+        const metadata: MovieMetadata = { ...value.metadata, id: candidate.providerId };
+
+        this.taskId.set(this.uploadFacade.startUpload(file, metadata, value.kind, access));
     }
 
     formatFileSize(bytes: number): string {
@@ -143,6 +166,7 @@ export class UploadPage {
     private resetAfterFinish(): void {
         this.taskId.set(null);
         this.clearDrafts();
+        this.identified.set(null);
         this.visibility.set('PRIVATE');
         this.sharedWith.set([]);
     }
@@ -168,4 +192,9 @@ export class UploadPage {
         this.file.set(null);
         void this.fileStorage.clearDraftFile().catch(() => undefined);
     }
+}
+
+function parseYear(releaseDate: string): number | null {
+    const year = Number(releaseDate?.slice(0, 4));
+    return Number.isFinite(year) && year > 0 ? year : null;
 }

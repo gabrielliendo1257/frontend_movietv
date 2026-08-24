@@ -79,6 +79,12 @@ export class UploadFacade {
             ...tasks,
         ]);
 
+        // Defensa local del INVALID_INTENT del BFF: sin candidato no se viaja.
+        if (!Number.isFinite(metadata.id) || metadata.id <= 0) {
+            this.fail(uploadId, 'Selecciona un candidato primero.');
+            return uploadId;
+        }
+
         void this.persistence.saveFile(uploadId, file).catch(() => undefined);
         this.runStart(uploadId, file);
 
@@ -417,8 +423,16 @@ function pendingMetadata(pending: PendingAddMedia): MovieMetadata {
     };
 }
 
+/**
+ * Mensaje legible priorizando el cuerpo del BFF: {code, error, message}
+ * (p. ej. INVALID_INTENT, DOWNSTREAM_REJECTED con mensaje de Movies).
+ */
 function toMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
+        const body = error.error as { code?: number; error?: string; message?: string } | null;
+        if (body?.message) return body.message;
+        if (body?.error) return body.error;
+
         if (error.status === 409) return 'La subida fue rechazada por el servidor.';
         if (error.status === 403) return 'No tienes permiso para añadir contenido.';
         if (error.status === 401) return 'Inicia sesión para añadir contenido.';
