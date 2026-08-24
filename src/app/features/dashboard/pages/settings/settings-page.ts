@@ -1,30 +1,17 @@
-import { Component, inject, signal } from '@angular/core';
-import { HomeService } from '@features/account/services/home.service';
-import { HomeView } from '@features/account/models/home';
+import { Component, inject } from '@angular/core';
+import { AccountStore } from '@features/account/data-access/account-store';
+import { BytesPipe } from '@shared/pipes/bytes.pipe';
 
 @Component({
     selector: 'app-settings-page',
-    imports: [],
+    imports: [BytesPipe],
     templateUrl: './settings-page.html',
     styleUrl: './settings-page.css',
 })
 export class SettingsPage {
-    private readonly homeService = inject(HomeService);
+    private readonly accountStore = inject(AccountStore);
 
-    readonly home = signal<HomeView | null>(null);
-
-    constructor() {
-        this.homeService.getHome().subscribe({
-            next: (home) => this.home.set(home),
-            error: () => this.home.set(null),
-        });
-    }
-
-    formatBytes(bytes: number): string {
-        if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-        if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-        return `${bytes} B`;
-    }
+    readonly home = this.accountStore.home;
 
     quotaPercent(quota: { quotaBytes: number; usedBytes: number }): number {
         if (!quota.quotaBytes) return 0;

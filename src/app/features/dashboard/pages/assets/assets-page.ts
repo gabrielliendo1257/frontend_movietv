@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
-import { LibrariesService } from '@features/libraries/services/libraries.service';
+import { LibrariesApi } from '@features/libraries/data-access/libraries-api';
+import { BytesPipe } from '@shared/pipes/bytes.pipe';
 import { Library, MediaAsset } from '@features/libraries/models/library';
 
 interface AssetRow extends MediaAsset {
@@ -8,18 +9,18 @@ interface AssetRow extends MediaAsset {
 
 @Component({
     selector: 'app-assets-page',
-    imports: [],
+    imports: [BytesPipe],
     templateUrl: './assets-page.html',
     styleUrl: './assets-page.css',
 })
 export class AssetsPage {
-    private readonly librariesService = inject(LibrariesService);
+    private readonly librariesApi = inject(LibrariesApi);
 
     readonly loading = signal(true);
     readonly rows = signal<AssetRow[]>([]);
 
     constructor() {
-        this.librariesService.list().subscribe({
+        this.librariesApi.list().subscribe({
             next: (libraries) => this.loadAll(libraries),
             error: () => this.loading.set(false),
         });
@@ -32,7 +33,7 @@ export class AssetsPage {
         }
         let remaining = libraries.length;
         for (const library of libraries) {
-            this.librariesService.scan(library.id, 0, 50).subscribe({
+            this.librariesApi.scan(library.id, 0, 50).subscribe({
                 next: (page) => {
                     this.rows.update((current) => [
                         ...current,
@@ -47,10 +48,4 @@ export class AssetsPage {
         }
     }
 
-    formatSize(bytes: number): string {
-        if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-        if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-        if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-        return `${bytes} B`;
-    }
 }

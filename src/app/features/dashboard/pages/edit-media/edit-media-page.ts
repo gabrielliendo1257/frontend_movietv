@@ -1,13 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ToastService } from '@core/services/toast.service';
-import { MovieProviderService } from '@features/movies/services/movie-provider.service';
+import { ToastService } from '@core/ui/toast.service';
+import { MoviesApi } from '@features/movies/data-access/movies-api';
 import { WebMovie } from '@features/movies/models/web-movie';
 import { MovieUpdateRequest } from '@features/movies/models/movie-update';
 import { MediaKind } from '@features/movies/models/media-kind';
 import { MediaForm, MediaFormValue } from '@features/movies/components/media-form/media-form';
 import { MovieSearchModal } from '@features/uploads/components/movie-search-modal/movie-search-modal';
-import { MovieMetadata } from '@features/uploads/models/movie-metadata';
+import { MovieMetadata } from '@features/movies/models/movie-metadata';
 
 @Component({
     selector: 'app-edit-media-page',
@@ -18,7 +18,7 @@ import { MovieMetadata } from '@features/uploads/models/movie-metadata';
 export class EditMediaPage {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
-    private readonly movieProviderService = inject(MovieProviderService);
+    private readonly moviesApi = inject(MoviesApi);
     private readonly toast = inject(ToastService);
 
     readonly movie = signal<WebMovie | null>(null);
@@ -36,7 +36,7 @@ export class EditMediaPage {
             this.loading.set(false);
             return;
         }
-        this.movieProviderService.findById(id).subscribe({
+        this.moviesApi.findById(id).subscribe({
             next: (movie) => {
                 this.movie.set(movie);
                 this.metadata.set(movie);
@@ -84,11 +84,11 @@ export class EditMediaPage {
                       kind: 'MOVIE',
                   };
         this.saving.set(true);
-        this.movieProviderService.update(movie.id, request).subscribe({
+        this.moviesApi.update(movie.id, request).subscribe({
             next: () => {
                 this.saving.set(false);
                 this.toast.success('Metadata actualizada.');
-                this.router.navigate(['/dashboard/catalog']);
+                this.router.navigate(['/catalog']);
             },
             error: () => {
                 this.saving.set(false);
@@ -98,6 +98,6 @@ export class EditMediaPage {
     }
 
     cancel(): void {
-        this.router.navigate(['/dashboard/catalog']);
+        this.router.navigate(['/catalog']);
     }
 }

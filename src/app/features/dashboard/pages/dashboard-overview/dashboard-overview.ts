@@ -1,9 +1,9 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { MovieProviderService } from '@features/movies/services/movie-provider.service';
-import { LibrariesService } from '@features/libraries/services/libraries.service';
+import { MoviesApi } from '@features/movies/data-access/movies-api';
+import { LibrariesApi } from '@features/libraries/data-access/libraries-api';
 import { UploadFacade } from '@features/uploads/services/upload-facade';
-import { ToastService } from '@core/services/toast.service';
+import { ToastService } from '@core/ui/toast.service';
 import { Library } from '@features/libraries/models/library';
 import { AddMediaModal, AddMediaSource } from '@features/dashboard/components/add-media-modal/add-media-modal';
 
@@ -20,8 +20,8 @@ interface ActivityEntry {
     styleUrl: './dashboard-overview.css',
 })
 export class DashboardOverview {
-    private readonly movieProviderService = inject(MovieProviderService);
-    private readonly librariesService = inject(LibrariesService);
+    private readonly moviesApi = inject(MoviesApi);
+    private readonly librariesApi = inject(LibrariesApi);
     private readonly uploadFacade = inject(UploadFacade);
     private readonly toast = inject(ToastService);
     private readonly router = inject(Router);
@@ -43,7 +43,7 @@ export class DashboardOverview {
     ];
 
     constructor() {
-        this.movieProviderService.list().subscribe({
+        this.moviesApi.list().subscribe({
             next: (movies) => {
                 this.mediaTotal.set(movies.length);
                 this.identified.set(movies.filter((m) => m.status === 'READY').length);
@@ -52,7 +52,7 @@ export class DashboardOverview {
             error: () => undefined,
         });
 
-        this.librariesService.list().subscribe({
+        this.librariesApi.list().subscribe({
             next: (libraries) => this.libraries.set(libraries),
             error: () => undefined,
         });
@@ -62,13 +62,13 @@ export class DashboardOverview {
         if (source === 'upload') {
             this.router.navigate(['/uploads']);
         } else if (source === 'local') {
-            this.router.navigate(['/dashboard/libraries']);
+            this.router.navigate(['/libraries']);
         } else {
             this.toast.info('S3 / Storage llegará pronto.');
         }
     }
 
     openLibrary(library: Library): void {
-        this.router.navigate(['/dashboard/libraries'], { queryParams: { library: library.id } });
+        this.router.navigate(['/libraries']);
     }
 }

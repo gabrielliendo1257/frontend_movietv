@@ -24,7 +24,7 @@
                 <div class="quota-fill" [style.width.%]="quotaPercent(home.quota)"></div>
             </div>
             <p class="muted">
-                {{ formatBytes(home.quota.usedBytes) }} de {{ formatBytes(home.quota.quotaBytes) }}
+                {{ home.quota.usedBytes | bytes }} de {{ home.quota.quotaBytes | bytes }}
                 ({{ quotaPercent(home.quota) }}%)
             </p>
             <p class="muted">Próximamente: raíces de biblioteca, S3, límites.</p>

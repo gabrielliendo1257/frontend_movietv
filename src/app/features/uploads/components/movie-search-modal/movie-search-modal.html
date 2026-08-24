@@ -46,17 +46,17 @@
                 </div>
             } @else if (results().length) {
                 <div class="results-list">
-                    @for (movie of results(); track movie.title) {
+                    @for (movie of results(); track movie.providerId) {
                         <button
                             class="result-item"
                             (click)="selectMovie(movie)"
                         >
                             <div class="result-poster">
-                                <img [src]="movie.poster_path" [alt]="movie.title" loading="lazy"/>
+                                <img [src]="movie.posterPath" [alt]="movie.title" loading="lazy"/>
                             </div>
                             <div class="result-info">
                                 <span class="result-title">{{ movie.title }}</span>
-                                <span class="result-meta">{{ movie.release_date }}</span>
+                                <span class="result-meta">{{ movie.releaseDate }}</span>
                                 <div class="result-badges">
                                     <span class="result-rating">{{ movie.year ?? '—' }}</span>
                                 </div>

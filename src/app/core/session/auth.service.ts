@@ -2,7 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
-import { SessionResponse } from '@core/models/SessionResponse';
+import { SessionResponse } from '@core/models/session-response';
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -28,9 +28,7 @@ export class AuthService {
     checkSession(): void {
         this._status.set('loading');
         this.http
-            .get<SessionResponse>(`${this.baseUrl}/web/session`, {
-                withCredentials: true,
-            })
+            .get<SessionResponse>(`${this.baseUrl}/web/session`)
             .subscribe({
                 next: (session) => {
                     this._status.set(session.authenticated ? 'authenticated' : 'unauthenticated');
@@ -57,7 +55,7 @@ export class AuthService {
     }
 
     logout(): void {
-        this.http.post(`${this.baseUrl}/web/logout`, null, { withCredentials: true }).subscribe({
+        this.http.post(`${this.baseUrl}/web/logout`, null).subscribe({
             next: () => {
                 this._status.set('unauthenticated');
                 window.location.href = '/';

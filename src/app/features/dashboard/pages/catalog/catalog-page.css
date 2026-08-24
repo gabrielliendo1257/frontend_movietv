@@ -252,3 +252,20 @@
     color: var(--color-muted);
     padding: 2rem;
 }
+
+/* --- Mobile --- */
+@media (max-width: 640px) {
+    .col-kind,
+    .col-source {
+        display: none;
+    }
+
+    .catalog-controls {
+        width: 100%;
+    }
+
+    .search-input {
+        flex: 1;
+        min-width: 0;
+    }
+}

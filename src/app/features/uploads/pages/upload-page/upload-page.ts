@@ -2,10 +2,10 @@ import { Component, computed, effect, inject, signal, viewChild } from '@angular
 import { ElementRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, Subject } from 'rxjs';
-import { ToastService } from '@core/services/toast.service';
+import { ToastService } from '@core/ui/toast.service';
 import { UploadFacade } from '@features/uploads/services/upload-facade';
 import { ACTIVE_UPLOAD_STATES } from '@features/uploads/models/upload-task';
-import { MovieMetadata } from '@features/uploads/models/movie-metadata';
+import { MovieMetadata } from '@features/movies/models/movie-metadata';
 import { UploadSessionPersistence } from '@features/uploads/services/upload-session-persistence';
 import { MediaForm, MediaFormValue } from '@features/movies/components/media-form/media-form';
 import { MovieSearchModal } from '@features/uploads/components/movie-search-modal/movie-search-modal';
@@ -59,7 +59,7 @@ export class UploadPage {
                 this.taskId.set(null);
                 this.clearDrafts();
                 this.toast.success('Media subida correctamente.');
-            } else if (task?.state === 'error') {
+            } else if (task?.state === 'failed') {
                 this.taskId.set(null);
                 this.toast.error(task.error ?? 'Upload failed.');
             }
@@ -98,7 +98,7 @@ export class UploadPage {
             this.toast.warning('Selecciona un archivo primero.');
             return;
         }
-        this.taskId.set(this.uploadFacade.startUpload(file, value.metadata));
+                this.taskId.set(this.uploadFacade.startUpload(file, value.metadata, value.kind));
     }
 
     formatFileSize(bytes: number): string {

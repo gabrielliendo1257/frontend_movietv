@@ -59,9 +59,9 @@
                         />
                     </th>
                     <th>Title</th>
-                    <th>Kind</th>
-                    <th>Status</th>
-                    <th>Source</th>
+                    <th class="col-kind">Kind</th>
+                    <th class="col-status">Status</th>
+                    <th class="col-source">Source</th>
                     <th class="col-actions">Actions</th>
                 </tr>
             </thead>
@@ -72,9 +72,9 @@
                             <input class="check" type="checkbox" [checked]="isSelected(movie)" (change)="toggle(movie)" />
                         </td>
                         <td class="col-title">{{ movie.title || 'Untitled' }}</td>
-                        <td><span class="kind">{{ kindOf(movie) }}</span></td>
-                        <td><span class="status" [class.ok]="movie.status === 'READY'">{{ movie.status }}</span></td>
-                        <td><span class="source">{{ sourceOf(movie) }}</span></td>
+                        <td class="col-kind"><span class="kind">{{ kindOf(movie) }}</span></td>
+                        <td class="col-status"><span class="status" [class.ok]="movie.status === 'READY'">{{ movie.status }}</span></td>
+                        <td class="col-source"><span class="source">{{ sourceOf(movie) }}</span></td>
                         <td class="col-actions">
                             <details class="dropdown">
                                 <summary class="menu-trigger">⋮</summary>

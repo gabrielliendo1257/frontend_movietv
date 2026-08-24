@@ -1,12 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { MovieProviderService } from '@features/movies/services/movie-provider.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MoviesApi } from '@features/movies/data-access/movies-api';
+import { EnrichmentApi } from '@features/movies/data-access/enrichment-api';
 import { WebMovie } from '@features/movies/models/web-movie';
 import { MovieVisibility } from '@features/movies/models/web-movie';
 import { VisibilityModal } from '@features/movies/components/visibility-modal/visibility-modal';
 import { VisibilityJob } from '@features/movies/models/visibility';
-import { ToastService } from '@core/services/toast.service';
+import { ToastService } from '@core/ui/toast.service';
 
 type StatusFilter = 'ALL' | 'DRAFT' | 'READY';
 type SourceFilter = 'ALL' | 'LOCAL' | 'S3';
@@ -19,9 +21,11 @@ type KindFilter = 'ALL' | 'MOVIE' | 'OTHER';
     styleUrl: './catalog-page.css',
 })
 export class CatalogPage {
-    private readonly movieProviderService = inject(MovieProviderService);
+    private readonly moviesApi = inject(MoviesApi);
+    private readonly enrichmentApi = inject(EnrichmentApi);
     private readonly toast = inject(ToastService);
     private readonly router = inject(Router);
+    private readonly route = inject(ActivatedRoute);
 
     readonly movies = signal<WebMovie[]>([]);
     readonly query = signal('');
@@ -62,9 +66,15 @@ export class CatalogPage {
     );
 
     constructor() {
-        this.movieProviderService.list().subscribe({
+        this.moviesApi.list().subscribe({
             next: (movies) => this.movies.set(movies),
             error: () => undefined,
+        });
+
+        // La búsqueda global del shell aterriza aquí: /catalog?q=…
+        this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+            const query = params.get('q');
+            if (query !== null) this.query.set(query);
         });
     }
 
@@ -107,12 +117,12 @@ export class CatalogPage {
 
     editMovie(movie: WebMovie): void {
         this.closeMenus();
-        this.router.navigate(['/dashboard/catalog', movie.id, 'edit']);
+        this.router.navigate(['/catalog', movie.id, 'edit']);
     }
 
     unlinkProvider(movie: WebMovie): void {
         this.closeMenus();
-        this.movieProviderService.unlinkEnrichment(movie.id).subscribe({
+        this.enrichmentApi.unlink(movie.id).subscribe({
             next: () => {
                 this.toast.success('Proveedor desvinculado.');
                 this.reload();
@@ -122,7 +132,7 @@ export class CatalogPage {
     }
 
     private reload(): void {
-        this.movieProviderService.list().subscribe({
+        this.moviesApi.list().subscribe({
             next: (movies) => this.movies.set(movies),
             error: () => undefined,
         });

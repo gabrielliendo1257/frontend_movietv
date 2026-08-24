@@ -43,35 +43,13 @@
             </div>
             <div class="movie-info-main">
                 <h1 class="movie-title">{{ title() }}</h1>
-                <div class="movie-meta">{{ meta() }}</div>
-                @if (genreNames().length) {
-                    <div class="genre-chips">
-                        @for (genre of genreNames(); track genre) {
-                            <span class="genre-chip">{{ genre }}</span>
-                        }
-                    </div>
+                @if (year()) {
+                    <div class="movie-meta">{{ year() }}</div>
                 }
                 @if (overview()) {
                     <p class="movie-overview">{{ overview() }}</p>
                 }
             </div>
         </section>
-
-        @if (recommendations().length) {
-            <section class="similar-row">
-                <h2 class="similar-title">You May Also Like</h2>
-                <div class="similar-scroll">
-                    @for (movie of recommendations(); track movie.id) {
-                        <app-card-movie-ui
-                            [title]="movie.title"
-                            [posterUrl]="movie.poster_path ?? ''"
-                            [rating]="movie.vote_average"
-                            [year]="movie.release_date.slice(0, 4)"
-                            [link]="'/watch/' + movie.id"
-                        ></app-card-movie-ui>
-                    }
-                </div>
-            </section>
-        }
     </main>
 </div>

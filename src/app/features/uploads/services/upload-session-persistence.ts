@@ -1,65 +1,60 @@
 import { inject, Injectable } from '@angular/core';
-import { MovieMetadata } from '@features/uploads/models/movie-metadata';
-import { UploadSessionDto } from '@features/uploads/models/upload-response';
+import { MovieDraft } from '@features/uploads/models/add-media';
 
-const SESSION_STORAGE_KEY = 'pending-upload-session';
+const PENDING_KEY = 'pending-add-media';
 const DB_NAME = 'movieflix-uploads';
 const STORE_NAME = 'files';
 const DRAFT_FILE_KEY = 'draft-file';
 
-export interface PendingUpload {
-    session: UploadSessionDto;
+/** Proceso de alta pendiente de cerrar; sobrevive recargas de página. */
+export interface PendingAddMedia {
+    idempotencyKey: string;
+    addMediaId: string | null;
+    movieId: number | null;
     fileName: string;
-    stage: 'uploading' | 'closing_session' | 'confirming';
-    metadata: MovieMetadata;
-    movieId?: number;
+    providerId: number;
+    draft: MovieDraft;
 }
 
-@Injectable({
-    providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class UploadSessionPersistence {
-    saveSession(pending: PendingUpload): void {
-        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(pending));
+    savePending(pending: PendingAddMedia): void {
+        localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
     }
 
-    loadSession(): PendingUpload | null {
-        const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    loadPending(): PendingAddMedia | null {
+        const raw = localStorage.getItem(PENDING_KEY);
         if (!raw) return null;
 
         try {
-            return JSON.parse(raw) as PendingUpload;
+            return JSON.parse(raw) as PendingAddMedia;
         } catch {
-            this.clear();
+            this.removePending();
             return null;
         }
     }
 
-    clear(): void {
-        const raw = localStorage.getItem(SESSION_STORAGE_KEY);
-
-        localStorage.removeItem(SESSION_STORAGE_KEY);
-
-        if (!raw) return;
-
-        try {
-            const uploadId = (JSON.parse(raw) as PendingUpload).session.uploadId;
-            void this.deleteFile(uploadId);
-        } catch {
-            return;
-        }
+    /** Solo borra el registro si sigue siendo el mismo proceso. */
+    clearPending(idempotencyKey: string): void {
+        if (this.loadPending()?.idempotencyKey !== idempotencyKey) return;
+        this.removePending();
+        void this.deleteFile(idempotencyKey).catch(() => undefined);
     }
 
-    removeSession(): void {
-        localStorage.removeItem(SESSION_STORAGE_KEY);
+    removePending(): void {
+        localStorage.removeItem(PENDING_KEY);
     }
 
-    saveFile(uploadId: string, file: File): Promise<void> {
-        return this.withStore<void>((store) => store.put(file, uploadId));
+    saveFile(id: string, file: File): Promise<void> {
+        return this.withStore<void>((store) => store.put(file, id));
     }
 
-    loadFile(uploadId: string): Promise<File | null> {
-        return this.withStore<File | undefined>((store) => store.get(uploadId)).then((file) => file ?? null);
+    loadFile(id: string): Promise<File | null> {
+        return this.withStore<File | undefined>((store) => store.get(id)).then((file) => file ?? null);
+    }
+
+    deleteFile(id: string): Promise<void> {
+        return this.withStore<void>((store) => store.delete(id));
     }
 
     saveDraftFile(file: File): Promise<void> {
@@ -74,11 +69,7 @@ export class UploadSessionPersistence {
         return this.withStore<void>((store) => store.delete(DRAFT_FILE_KEY));
     }
 
-    deleteFile(uploadId: string): Promise<void> {
-        return this.withStore<void>((store) => store.delete(uploadId));
-    }
-
-    private withStore<T>(operation: (store: IDBObjectStore) => IDBRequest<any>): Promise<T> {
+    private withStore<T>(operation: (store: IDBObjectStore) => IDBRequest): Promise<T> {
         return this.openDb().then(
             (db) =>
                 new Promise<T>((resolve, reject) => {

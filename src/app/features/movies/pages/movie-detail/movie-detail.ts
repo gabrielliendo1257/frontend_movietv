@@ -2,9 +2,10 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { MovieProviderService } from '@features/movies/services/movie-provider.service';
+import { MoviesApi } from '@features/movies/data-access/movies-api';
+import { VisibilityApi } from '@features/movies/data-access/visibility-api';
 import { MovieVisibility, WebMovie } from '@features/movies/models/web-movie';
-import { ToastService } from '@core/services/toast.service';
+import { ToastService } from '@core/ui/toast.service';
 
 const VISIBILITY_LABELS: Record<MovieVisibility, string> = {
     PUBLIC: 'Pública',
@@ -20,7 +21,8 @@ const VISIBILITY_LABELS: Record<MovieVisibility, string> = {
 })
 export class MovieDetail implements OnInit {
     private readonly route = inject(ActivatedRoute);
-    private readonly movieProviderService = inject(MovieProviderService);
+    private readonly moviesApi = inject(MoviesApi);
+    private readonly visibilityApi = inject(VisibilityApi);
     private readonly toast = inject(ToastService);
 
     readonly visibilityOptions: MovieVisibility[] = ['PRIVATE', 'PUBLIC', 'SHARED'];
@@ -44,7 +46,7 @@ export class MovieDetail implements OnInit {
 
     private load(id: number): void {
         this.loading.set(true);
-        this.movieProviderService.findById(id).subscribe({
+        this.moviesApi.findById(id).subscribe({
             next: (movie) => {
                 this.movie.set(movie);
                 this.visibility.set(movie.visibility ?? 'PRIVATE');
@@ -102,7 +104,7 @@ export class MovieDetail implements OnInit {
 
     private applyVisibility(movie: WebMovie, value: MovieVisibility, usernames?: string[]): void {
         this.saving.set(true);
-        this.movieProviderService.setVisibility(movie.id, value, usernames).subscribe({
+        this.visibilityApi.set(movie.id, value, usernames).subscribe({
             next: (updated) => {
                 this.visibility.set(updated.visibility ?? value);
                 this.saving.set(false);

@@ -29,14 +29,14 @@
                     <div class="progress-track">
                         <div
                             class="progress-fill"
-                            [class.indeterminate]="task.state === 'requesting_session' || task.state === 'resuming' || task.state === 'persisting' || task.state === 'confirming'"
+                            [class.indeterminate]="task.state === 'starting' || task.state === 'verifying'"
                             [style.width.%]="task.state === 'completed' ? 100 : task.progress"
                         ></div>
                     </div>
 
                     <div class="task-meta">
                         <span class="task-percent">
-                            @if (task.state === 'completed' || task.state === 'error' || task.state === 'cancelled') {
+                            @if (task.state === 'completed' || task.state === 'failed' || task.state === 'cancelled') {
                                 {{ task.state === 'completed' ? 'Done' : '' }}
                             } @else {
                                 {{ task.progress }}%
@@ -50,7 +50,7 @@
                     <div class="task-actions">
                         @if (isActive(task.state)) {
                             <button class="act-btn danger" (click)="cancel(task)">Cancel</button>
-                        } @else if (task.state === 'error' || task.state === 'cancelled') {
+                        } @else if (task.state === 'failed' || task.state === 'cancelled') {
                             <button class="act-btn" (click)="retry(task)">Retry</button>
                             <button class="act-btn ghost" (click)="remove(task)">Remove</button>
                         } @else if (task.state === 'completed') {

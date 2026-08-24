@@ -10,7 +10,7 @@
     } @else if (error() || !home()) {
         <div class="empty-state">
             <p>No se pudo cargar la información de tu cuenta.</p>
-            <button class="btn" (click)="load()">Reintentar</button>
+            <button class="btn" (click)="reload()">Reintentar</button>
         </div>
     } @else {
         @let homeView = home()!;
@@ -42,8 +42,8 @@
                     <div class="quota-fill" [style.width.%]="quotaPercent(homeView.quota.usedBytes, homeView.quota.quotaBytes)"></div>
                 </div>
                 <p class="quota-text">
-                    {{ formatBytes(homeView.quota.usedBytes) }} de {{ formatBytes(homeView.quota.quotaBytes) }} usados
-                    ({{ formatBytes(homeView.quota.remainingBytes) }} libres)
+                    {{ homeView.quota.usedBytes | bytes }} de {{ homeView.quota.quotaBytes | bytes }} usados
+                    ({{ homeView.quota.remainingBytes | bytes }} libres)
                 </p>
             </div>
         </div>
@@ -66,7 +66,7 @@
                         @for (upload of homeView.recentUploads; track upload.storageId) {
                             <tr>
                                 <td class="object-key">{{ upload.objectKey }}</td>
-                                <td>{{ formatBytes(upload.sizeInBytes) }}</td>
+                                <td>{{ upload.sizeInBytes | bytes }}</td>
                                 <td><span class="badge">{{ upload.status }}</span></td>
                                 <td>{{ upload.createdAt }}</td>
                             </tr>

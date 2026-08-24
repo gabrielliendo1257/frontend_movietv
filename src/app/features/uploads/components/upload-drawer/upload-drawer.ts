@@ -3,14 +3,11 @@ import { ACTIVE_UPLOAD_STATES, UploadTask, UploadState } from '@features/uploads
 import { UploadFacade } from '@features/uploads/services/upload-facade';
 
 const STATE_LABELS: Record<UploadState, string> = {
-    idle: 'Idle',
-    resuming: 'Resuming',
-    requesting_session: 'Preparing',
+    starting: 'Preparing',
     uploading: 'Uploading',
-    persisting: 'Saving',
-    confirming: 'Confirming',
+    verifying: 'Verifying',
     completed: 'Completed',
-    error: 'Error',
+    failed: 'Failed',
     cancelled: 'Cancelled',
 };
 

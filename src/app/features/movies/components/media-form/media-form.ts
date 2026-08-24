@@ -1,7 +1,7 @@
 import { Component, effect, inject, input, OnInit, output, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MovieMetadata } from '@features/uploads/models/movie-metadata';
+import { MovieMetadata } from '@features/movies/models/movie-metadata';
 import { MediaKind } from '@features/movies/models/media-kind';
 import { ChipsInput } from '@features/uploads/components/chips-input/chips-input';
 

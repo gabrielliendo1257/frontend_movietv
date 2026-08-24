@@ -65,3 +65,11 @@
 .status.ok {
     color: var(--color-success);
 }
+
+/* --- Mobile --- */
+@media (max-width: 640px) {
+    .col-size,
+    .col-library {
+        display: none;
+    }
+}

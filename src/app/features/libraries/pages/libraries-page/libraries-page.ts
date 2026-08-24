@@ -1,14 +1,15 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '@core/services/auth.service';
-import { ToastService } from '@core/services/toast.service';
-import { LibrariesService } from '@features/libraries/services/libraries.service';
+import { AuthService } from '@core/session/auth.service';
+import { ToastService } from '@core/ui/toast.service';
+import { LibrariesApi } from '@features/libraries/data-access/libraries-api';
 import { Library, MediaAsset } from '@features/libraries/models/library';
 import { MovieVisibility } from '@features/movies/models/web-movie';
 import { VisibilityModal } from '@features/movies/components/visibility-modal/visibility-modal';
 import { VisibilityJob } from '@features/movies/models/visibility';
 import { IdentifyModal } from '@features/libraries/components/identify-modal/identify-modal';
+import { BytesPipe } from '@shared/pipes/bytes.pipe';
 
 const PAGE_SIZE = 20;
 
@@ -21,12 +22,12 @@ interface VisibilityTarget {
 
 @Component({
     selector: 'app-libraries-page',
-    imports: [FormsModule, VisibilityModal, IdentifyModal],
+    imports: [FormsModule, VisibilityModal, IdentifyModal, BytesPipe],
     templateUrl: './libraries-page.html',
     styleUrl: './libraries-page.css',
 })
 export class LibrariesPage {
-    private readonly librariesService = inject(LibrariesService);
+    private readonly librariesApi = inject(LibrariesApi);
     private readonly toast = inject(ToastService);
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
@@ -82,7 +83,7 @@ export class LibrariesPage {
 
     loadLibraries(): void {
         this.loading.set(true);
-        this.librariesService.list().subscribe({
+        this.librariesApi.list().subscribe({
             next: (libraries) => {
                 this.libraries.set(libraries);
                 this.loading.set(false);
@@ -101,7 +102,7 @@ export class LibrariesPage {
             return;
         }
         this.registering.set(true);
-        this.librariesService.register(path).subscribe({
+        this.librariesApi.register(path).subscribe({
             next: (library) => {
                 this.libraries.set([...this.libraries(), library]);
                 this.rootPath.set('');
@@ -116,7 +117,7 @@ export class LibrariesPage {
     }
 
     deleteLibrary(library: Library): void {
-        this.librariesService.delete(library.id).subscribe({
+        this.librariesApi.delete(library.id).subscribe({
             next: () => {
                 this.libraries.set(this.libraries().filter((item) => item.id !== library.id));
                 if (this.selected()?.id === library.id) this.selected.set(null);
@@ -135,7 +136,7 @@ export class LibrariesPage {
 
     loadAssets(libraryId: number, page: number): void {
         this.loadingAssets.set(true);
-        this.librariesService.scan(libraryId, page, PAGE_SIZE).subscribe({
+        this.librariesApi.scan(libraryId, page, PAGE_SIZE).subscribe({
             next: (result) => {
                 this.assets.set(result.items);
                 this.assetsTotal.set(result.total);
@@ -151,7 +152,7 @@ export class LibrariesPage {
     }
 
     private loadCounts(libraryId: number): void {
-        this.librariesService.unidentified(libraryId, 0, 1).subscribe({
+        this.librariesApi.unidentified(libraryId, 0, 1).subscribe({
             next: (result) => this.unidentifiedCount.set(result.total),
             error: () => this.unidentifiedCount.set(0),
         });
@@ -169,7 +170,7 @@ export class LibrariesPage {
         const selected = this.selected();
         if (!selected) return;
         this.closeMenus();
-        this.librariesService.cancelScan(selected.id).subscribe({
+        this.librariesApi.cancelScan(selected.id).subscribe({
             next: () => this.toast.info('Escaneo cancelado'),
             error: () => this.toast.error('No se pudo cancelar el escaneo'),
         });
@@ -278,10 +279,4 @@ export class LibrariesPage {
         });
     }
 
-    formatSize(bytes: number): string {
-        if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-        if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-        if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-        return `${bytes} B`;
-    }
 }

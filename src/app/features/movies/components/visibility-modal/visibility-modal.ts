@@ -1,7 +1,7 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ToastService } from '@core/services/toast.service';
-import { VisibilityJobService } from '@features/movies/services/visibility-job.service';
+import { ToastService } from '@core/ui/toast.service';
+import { VisibilityApi } from '@features/movies/data-access/visibility-api';
 import { VisibilityJob } from '@features/movies/models/visibility';
 import { MovieVisibility } from '@features/movies/models/web-movie';
 import { JobProgress } from '@features/movies/components/job-progress/job-progress';
@@ -19,7 +19,7 @@ const VISIBILITY_OPTIONS: { value: MovieVisibility; label: string }[] = [
     styleUrl: './visibility-modal.css',
 })
 export class VisibilityModal {
-    private readonly visibilityJobService = inject(VisibilityJobService);
+    private readonly visibilityApi = inject(VisibilityApi);
     private readonly toast = inject(ToastService);
 
     readonly label = input.required<string>();
@@ -86,7 +86,7 @@ export class VisibilityModal {
             usernames: this.usernames().length ? this.usernames() : undefined,
         };
 
-        this.visibilityJobService.bulk(request).subscribe({
+        this.visibilityApi.bulk(request).subscribe({
             next: (job) => this.track(job),
             error: (error: unknown) => this.handleError(error),
         });
@@ -95,7 +95,7 @@ export class VisibilityModal {
     private track(initial: VisibilityJob): void {
         this.phase.set('running');
         this.job.set(initial);
-        this.visibilityJobService.events(initial.jobId).subscribe({
+        this.visibilityApi.jobEvents(initial.jobId).subscribe({
             next: (job) => {
                 this.job.set(job);
                 if (job.status === 'DONE') {

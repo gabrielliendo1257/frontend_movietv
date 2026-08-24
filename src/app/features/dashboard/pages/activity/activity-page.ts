@@ -27,7 +27,7 @@ export class ActivityPage {
 
     uploadLabel(state: string): string {
         if (state === 'completed') return 'COMPLETED';
-        if (state === 'error') return 'FAILED';
+        if (state === 'failed') return 'FAILED';
         if (state === 'cancelled') return 'CANCELLED';
         return 'RUNNING';
     }

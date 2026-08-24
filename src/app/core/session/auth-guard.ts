@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { CanMatchFn, Router } from '@angular/router';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { AuthService } from '@core/services/auth.service';
+import { AuthService } from '@core/session/auth.service';
 import { filter, map, take } from 'rxjs';
 
 
@@ -11,7 +11,6 @@ export const authGuard: CanMatchFn = (_route, segments) => {
 
     const attemptedUrl = `/${segments.map((segment) => segment.path).join('/')}`;
     const status = authService.status();
-    console.log("Executing authGuard (status): ", status)
 
     if (status === 'loading') {
         return toObservable(authService.status).pipe(

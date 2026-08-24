@@ -1,6 +1,5 @@
 import {Routes} from '@angular/router';
-import {PersonalMovies} from '@features/movies/pages/personal-movies/personal-movies';
-import { authGuard } from '@core/auth/auth-guard';
+import { authGuard } from '@core/session/auth-guard';
 
 export const routes: Routes = [
     {
@@ -13,7 +12,8 @@ export const routes: Routes = [
             },
             {
                 path: 'movies',
-                component: PersonalMovies
+                loadComponent: () =>
+                    import('./features/movies/pages/personal-movies/personal-movies').then(m => m.PersonalMovies),
             },
             {
                 path: 'movies/:id',
@@ -22,8 +22,16 @@ export const routes: Routes = [
                 canMatch: [authGuard]
             },
             {
-                path: 'home',
-                loadChildren: () => import('./features/movies/movies.routes').then(u => u.routes)
+                path: 'catalog',
+                loadComponent: () =>
+                    import('./features/dashboard/pages/catalog/catalog-page').then(m => m.CatalogPage),
+                canMatch: [authGuard]
+            },
+            {
+                path: 'catalog/:id/edit',
+                loadComponent: () =>
+                    import('./features/dashboard/pages/edit-media/edit-media-page').then(m => m.EditMediaPage),
+                canMatch: [authGuard]
             },
             {
                 path: 'uploads',
@@ -40,6 +48,8 @@ export const routes: Routes = [
                     import('./features/account/pages/account-page/account-page').then(m => m.AccountPage),
             },
             {
+                // Administración: overview de operaciones, assets y actividad.
+                // Catalog/Libraries viven como destinos globales de primer nivel.
                 path: 'dashboard',
                 loadComponent: () =>
                     import('./features/dashboard/dashboard-layout/dashboard-layout').then(m => m.DashboardLayout),
@@ -50,21 +60,6 @@ export const routes: Routes = [
                         pathMatch: 'full',
                         loadComponent: () =>
                             import('./features/dashboard/pages/dashboard-overview/dashboard-overview').then(m => m.DashboardOverview),
-                    },
-                    {
-                        path: 'libraries',
-                        loadComponent: () =>
-                            import('./features/libraries/pages/libraries-page/libraries-page').then(m => m.LibrariesPage),
-                    },
-                    {
-                        path: 'catalog',
-                        loadComponent: () =>
-                            import('./features/dashboard/pages/catalog/catalog-page').then(m => m.CatalogPage),
-                    },
-                    {
-                        path: 'catalog/:id/edit',
-                        loadComponent: () =>
-                            import('./features/dashboard/pages/edit-media/edit-media-page').then(m => m.EditMediaPage),
                     },
                     {
                         path: 'assets',

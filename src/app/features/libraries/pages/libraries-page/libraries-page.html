@@ -136,7 +136,7 @@
                                         <td class="col-resource">
                                             <span class="resource-name">{{ asset.relativePath }}</span>
                                         </td>
-                                        <td class="col-size">{{ formatSize(asset.size) }}</td>
+                                        <td class="col-size">{{ asset.size | bytes }}</td>
                                         <td class="col-type">{{ asset.mimeType }}</td>
                                         <td class="col-status">
                                             <span class="asset-status" [class.ok]="asset.status === 'IDENTIFIED'">

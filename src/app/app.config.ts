@@ -2,7 +2,8 @@ import {ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChange
 import {provideRouter} from '@angular/router';
 
 import {routes} from './app.routes';
-import {provideHttpClient, withInterceptors, withInterceptorsFromDi} from '@angular/common/http';
+import {provideHttpClient, withInterceptors} from '@angular/common/http';
+import {bffCredentialsInterceptor} from '@core/http/bff-credentials.interceptor';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -10,6 +11,6 @@ export const appConfig: ApplicationConfig = {
         provideZoneChangeDetection({eventCoalescing: true}),
         provideRouter(routes),
 
-        provideHttpClient(withInterceptorsFromDi())
+        provideHttpClient(withInterceptors([bffCredentialsInterceptor]))
     ]
 };

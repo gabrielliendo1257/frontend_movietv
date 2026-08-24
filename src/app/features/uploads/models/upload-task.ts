@@ -1,32 +1,31 @@
-import { MovieMetadata } from '@features/uploads/models/movie-metadata';
+import { MediaKind } from '@features/movies/models/media-kind';
+import { MovieMetadata } from '@features/movies/models/movie-metadata';
 
+/** Estados que le interesan a la UX; el detalle fino vive en AddMediaPhase del BFF. */
 export type UploadState =
-    | 'idle'
-    | 'resuming'
-    | 'requesting_session'
+    | 'starting'
     | 'uploading'
-    | 'persisting'
-    | 'confirming'
+    | 'verifying'
     | 'completed'
-    | 'error'
+    | 'failed'
     | 'cancelled';
 
 export const ACTIVE_UPLOAD_STATES: ReadonlySet<UploadState> = new Set<UploadState>([
-    'resuming',
-    'requesting_session',
+    'starting',
     'uploading',
-    'persisting',
-    'confirming',
+    'verifying',
 ]);
 
 export interface UploadTask {
-    uploadId: string;
-    file: File | null;
-    fileName: string;
-    progress: number;
-    state: UploadState;
-    uploadUrl: string;
-    storageKey: string;
-    metadata: MovieMetadata;
-    error?: string | null;
+    /** Clave local de la tarea; es el idempotencyKey del proceso en el BFF. */
+    readonly uploadId: string;
+    readonly addMediaId: string | null;
+    readonly movieId: number | null;
+    readonly file: File | null;
+    readonly fileName: string;
+    readonly progress: number;
+    readonly state: UploadState;
+    readonly metadata: MovieMetadata;
+    readonly kind: MediaKind;
+    readonly error?: string | null;
 }

@@ -8,11 +8,11 @@
                 <div class="job">
                     <div class="job-head">
                         <span class="job-text">Uploading {{ task.fileName }}</span>
-                        <span class="job-state" [class.failed]="task.state === 'error'" [class.done]="task.state === 'completed'">
+                        <span class="job-state" [class.failed]="task.state === 'failed'" [class.done]="task.state === 'completed'">
                             {{ uploadLabel(task.state) }}
                         </span>
                     </div>
-                    @if (task.state !== 'completed' && task.state !== 'error') {
+                    @if (task.state !== 'completed' && task.state !== 'failed') {
                         <div class="track">
                             <div class="fill" [style.width.%]="task.progress"></div>
                         </div>

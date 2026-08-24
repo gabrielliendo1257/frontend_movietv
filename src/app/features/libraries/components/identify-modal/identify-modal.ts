@@ -1,11 +1,11 @@
 import { Component, inject, input, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, filter, map, Subject, switchMap } from 'rxjs';
-import { LibrariesService } from '@features/libraries/services/libraries.service';
+import { LibrariesApi } from '@features/libraries/data-access/libraries-api';
 import { MediaAsset } from '@features/libraries/models/library';
 import { MediaKind } from '@features/movies/models/media-kind';
 import { EnrichmentSearchResult } from '@features/movies/models/enrichment';
-import { MovieProviderService } from '@features/movies/services/movie-provider.service';
+import { EnrichmentApi } from '@features/movies/data-access/enrichment-api';
 
 const MIN_QUERY_LENGTH = 2;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -17,8 +17,8 @@ const SEARCH_DEBOUNCE_MS = 300;
     styleUrl: './identify-modal.css',
 })
 export class IdentifyModal {
-    private readonly librariesService = inject(LibrariesService);
-    private readonly movieProviderService = inject(MovieProviderService);
+    private readonly librariesApi = inject(LibrariesApi);
+    private readonly enrichmentApi = inject(EnrichmentApi);
 
     private readonly searchSubject = new Subject<string>();
 
@@ -39,7 +39,7 @@ export class IdentifyModal {
                 map((value) => value.trim()),
                 filter((q) => q.length >= MIN_QUERY_LENGTH),
                 distinctUntilChanged(),
-                switchMap((q) => this.movieProviderService.enrichmentSearch(q)),
+                switchMap((q) => this.enrichmentApi.search(q)),
             )
             .subscribe({
                 next: (results) => this.results.set(results),
@@ -69,7 +69,7 @@ export class IdentifyModal {
         if (!title) return;
 
         this.submitting.set(true);
-        this.librariesService
+        this.librariesApi
             .identify(asset.id, { title, tmdbId: request?.tmdbId, kind: this.kind() })
             .subscribe({
             next: () => {

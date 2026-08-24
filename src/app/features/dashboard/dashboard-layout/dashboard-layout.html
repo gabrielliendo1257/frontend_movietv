@@ -1,5 +1,13 @@
 <div class="dash-shell">
-    <aside class="dash-sidebar">
+    <button class="dash-burger" type="button" (click)="menuOpen.set(!menuOpen())" aria-label="Menú">
+        ☰
+    </button>
+
+    @if (menuOpen()) {
+        <div class="dash-backdrop" (click)="menuOpen.set(false)"></div>
+    }
+
+    <aside class="dash-sidebar" [class.open]="menuOpen()">
         <nav class="dash-nav">
             @for (entry of nav; track entry.label) {
                 <a
@@ -7,6 +15,7 @@
                     [routerLink]="entry.route"
                     routerLinkActive="active"
                     [routerLinkActiveOptions]="{ exact: entry.route === '/dashboard' }"
+                    (click)="menuOpen.set(false)"
                 >
                     {{ entry.label }}
                 </a>
@@ -18,6 +27,7 @@
                                 [routerLink]="child.route"
                                 routerLinkActive="active-sub"
                                 [routerLinkActiveOptions]="{ exact: false }"
+                                (click)="menuOpen.set(false)"
                             >
                                 {{ child.label }}
                             </a>

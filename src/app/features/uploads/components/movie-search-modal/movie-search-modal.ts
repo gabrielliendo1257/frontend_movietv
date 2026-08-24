@@ -12,14 +12,15 @@ import {
     switchMap,
     tap,
 } from 'rxjs';
-import { MovieProviderService } from '@features/movies/services/movie-provider.service';
-import { EnrichmentSearchResult } from '@features/movies/models/enrichment';
-import { MovieMetadata } from '@features/uploads/models/movie-metadata';
+import { AddMediaApi } from '@features/uploads/data-access/add-media-api';
+import { MovieCandidate, MovieCandidatePreview } from '@features/uploads/models/add-media';
+import { MovieMetadata } from '@features/movies/models/movie-metadata';
 
 const MIN_QUERY_LENGTH = 2;
 const SEARCH_DEBOUNCE_MS = 300;
 const CACHE_MAX_ENTRIES = 100;
 
+/** Selección de candidato TMDB dentro de la experiencia de alta/edición. */
 @Component({
     selector: 'app-movie-search-modal',
     imports: [FormsModule],
@@ -27,16 +28,16 @@ const CACHE_MAX_ENTRIES = 100;
     styleUrl: './movie-search-modal.css',
 })
 export class MovieSearchModal {
-    private readonly movieProviderService: MovieProviderService = inject(MovieProviderService);
+    private readonly addMediaApi = inject(AddMediaApi);
 
     private readonly searchSubject = new Subject<string>();
-    private readonly cache = new Map<string, EnrichmentSearchResult[]>();
+    private readonly cache = new Map<string, MovieCandidate[]>();
 
     isOpen = model(false);
     movieSelected = output<MovieMetadata>();
 
     readonly query = signal('');
-    readonly results = signal<EnrichmentSearchResult[]>([]);
+    readonly results = signal<MovieCandidate[]>([]);
     readonly searching = signal(false);
 
     readonly showNoResults = computed(
@@ -60,30 +61,20 @@ export class MovieSearchModal {
         this.searchSubject.next(value);
     }
 
-    selectMovie(movie: EnrichmentSearchResult): void {
+    selectMovie(candidate: MovieCandidate): void {
         lastValueFrom(
-            this.movieProviderService.enrichmentPreview(movie.tmdb_id).pipe(
-                map((preview) => ({
-                    id: preview.tmdb_id,
-                    title: preview.title,
-                    originalTitle: preview.originalTitle,
-                    year: preview.year,
-                    genres: preview.genres,
-                    popularity: preview.popularity,
-                    duration: preview.duration,
-                    director: preview.director,
-                    cast: preview.cast,
-                    overview: preview.overview,
-                    poster_path: preview.poster_path,
-                    release_date: preview.release_date,
-                    country: preview.country,
-                    language: preview.language,
-                    awards: [],
-                })),
+            this.addMediaApi.candidatePreview(candidate.providerId).pipe(
+                map(toMetadata),
+                catchError((error) => {
+                    console.error(error);
+                    return EMPTY;
+                }),
             ),
         )
-            .then((metadata) => this.movieSelected.emit(metadata))
-            .catch((error) => console.error(error));
+            .then((metadata) => {
+                if (metadata) this.movieSelected.emit(metadata);
+            })
+            .catch(() => undefined);
     }
 
     close(): void {
@@ -110,7 +101,7 @@ export class MovieSearchModal {
 
         this.searching.set(true);
 
-        return this.movieProviderService.enrichmentSearch(query).pipe(
+        return this.addMediaApi.searchCandidates(query).pipe(
             tap((movies) => {
                 this.setCache(query, movies);
                 this.results.set(movies);
@@ -124,11 +115,32 @@ export class MovieSearchModal {
         );
     }
 
-    private setCache(query: string, movies: EnrichmentSearchResult[]): void {
+    private setCache(query: string, movies: MovieCandidate[]): void {
         this.cache.set(query, movies);
 
         if (this.cache.size > CACHE_MAX_ENTRIES) {
-            this.cache.delete(this.cache.keys().next().value as string);
+            const oldest = this.cache.keys().next();
+            if (oldest.value !== undefined) this.cache.delete(oldest.value);
         }
     }
+}
+
+function toMetadata(preview: MovieCandidatePreview): MovieMetadata {
+    return {
+        id: preview.providerId,
+        title: preview.title,
+        originalTitle: preview.originalTitle,
+        year: preview.year,
+        genres: preview.genres,
+        popularity: 5,
+        duration: preview.duration,
+        director: preview.director,
+        cast: preview.cast,
+        overview: preview.overview,
+        poster_path: preview.posterPath,
+        release_date: preview.releaseDate,
+        country: preview.country,
+        language: preview.language,
+        awards: [],
+    };
 }
