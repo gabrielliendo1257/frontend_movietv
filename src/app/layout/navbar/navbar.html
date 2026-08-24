@@ -1,0 +1,26 @@
+<nav class="navbar">
+    <div class="nav-inner">
+        <!-- 1. Brand: identidad + volver a Home -->
+        <a class="brand" routerLink="/movies" aria-label="MVFLIX — Home">
+            <span class="brand-m">M</span><span class="brand-v">V</span><span class="brand-name">FLIX</span>
+        </a>
+
+        <!-- 2. Destinos globales -->
+        <app-primary-navigation class="nav-destinations" />
+
+        <!-- 3–6. Acción primaria, búsqueda, actividad, usuario -->
+        <div class="nav-tools">
+            @if (access.canAddMedia()) {
+                <app-add-media-action [activeUploads]="activeUploads()" />
+            }
+
+            <app-global-search />
+
+            @if (access.isAuthenticated()) {
+                <app-notification-button [count]="activeUploads()" />
+            }
+
+            <app-user-menu />
+        </div>
+    </div>
+</nav>

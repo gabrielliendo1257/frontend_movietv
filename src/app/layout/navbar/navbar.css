@@ -1,0 +1,57 @@
+:host {
+    display: block;
+}
+
+.navbar {
+    background: rgba(12, 12, 15, 0.88);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid #1e1e26;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0 1.25rem;
+    height: 60px;
+}
+
+/* ─── Brand ─── */
+.brand {
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #e4e4ec;
+    text-decoration: none;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.brand-m { color: #ff3d00; }
+
+/* ─── Herramientas a la derecha ─── */
+.nav-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+}
+
+app-primary-navigation {
+    display: flex;
+    align-items: center;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 1023px) {
+    .nav-inner { gap: 1rem; padding: 0 0.9rem; }
+}
+
+@media (max-width: 767px) {
+    .nav-inner { height: 54px; }
+}
