@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { HostListener } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/session/auth.service';
-import { AccountStore } from '@features/account/data-access/account-store';
+import { ShellStore } from '@features/shell/data-access/shell-store';
 import { ShellAccess } from '@layout/access';
 
 /**
@@ -17,7 +17,10 @@ import { ShellAccess } from '@layout/access';
             <div class="user-menu">
                 <button class="user-trigger" type="button" (click)="menuOpen.set(!menuOpen())"
                         [attr.aria-expanded]="menuOpen()" aria-label="Menú de usuario">
-                    @if (initial(); as letter) {
+                    @if (avatarUrl(); as src) {
+                        <img class="avatar avatar-img" [src]="src" alt=""
+                             (error)="avatarFailed.set(true)" />
+                    } @else if (initial(); as letter) {
                         <span class="avatar">{{ letter }}</span>
                     }
                     <span class="username">{{ username() }}</span>
@@ -102,6 +105,8 @@ import { ShellAccess } from '@layout/access';
             text-transform: uppercase;
         }
 
+        .avatar-img { object-fit: cover; }
+
         .chevron { color: #92929e; transition: transform 0.2s ease; }
         .chevron.open { transform: rotate(180deg); }
 
@@ -182,17 +187,27 @@ import { ShellAccess } from '@layout/access';
 })
 export class UserMenu {
     private readonly auth = inject(AuthService);
-    private readonly accountStore = inject(AccountStore);
+    private readonly shell = inject(ShellStore);
     readonly access = inject(ShellAccess);
 
     readonly menuOpen = signal(false);
 
-    readonly profile = this.accountStore.profile;
+    /** Avatar roto → fallback a iniciales sin recargar nada. */
+    readonly avatarFailed = signal(false);
 
-    readonly username = computed(() => this.profile()?.username ?? '');
+    readonly profile = this.shell.user;
+
+    readonly username = computed(() => {
+        const user = this.profile();
+        return user?.displayName ?? user?.username ?? '';
+    });
     readonly email = computed(() => this.profile()?.email ?? null);
+    readonly avatarUrl = computed(() => {
+        if (this.avatarFailed()) return null;
+        return this.profile()?.avatarUrl ?? null;
+    });
     readonly initial = computed(() => {
-        const name = this.username();
+        const name = this.username().trim() || this.profile()?.username || '';
         return name ? name[0] : null;
     });
 

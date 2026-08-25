@@ -8,7 +8,7 @@
         <!-- 2. Destinos globales -->
         <app-primary-navigation class="nav-destinations" />
 
-        <!-- 3–6. Acción primaria, búsqueda, actividad, usuario -->
+        <!-- 3–6. Acción primaria, búsqueda, actividad, cuota, usuario -->
         <div class="nav-tools">
             @if (access.canAddMedia()) {
                 <app-add-media-action [activeUploads]="activeUploads()" />
@@ -17,7 +17,8 @@
             <app-global-search />
 
             @if (access.isAuthenticated()) {
-                <app-notification-button [count]="activeUploads()" />
+                <app-notification-button [count]="activityBadge()" />
+                <app-quota-indicator [quota]="shell.quota()" />
             }
 
             <app-user-menu />
