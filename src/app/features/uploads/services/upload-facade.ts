@@ -394,7 +394,7 @@ function toDraft(metadata: MovieMetadata, kind: MediaKind): MovieDraft {
         cast: metadata.cast,
         overview: metadata.overview,
         poster_path: metadata.poster_path,
-        release_date: metadata.release_date,
+        release_date: metadata.release_date ?? undefined,
         country: metadata.country,
         language: metadata.language,
         awards: metadata.awards,

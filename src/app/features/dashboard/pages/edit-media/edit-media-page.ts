@@ -76,7 +76,7 @@ export class EditMediaPage {
                       cast: m.cast,
                       overview: m.overview,
                       poster_path: m.poster_path,
-                      release_date: m.release_date,
+                      release_date: m.release_date ?? undefined,
                       country: m.country,
                       language: m.language,
                       awards: m.awards,

@@ -194,7 +194,7 @@ export class UploadPage {
     }
 }
 
-function parseYear(releaseDate: string): number | null {
+function parseYear(releaseDate: string | null | undefined): number | null {
     const year = Number(releaseDate?.slice(0, 4));
     return Number.isFinite(year) && year > 0 ? year : null;
 }

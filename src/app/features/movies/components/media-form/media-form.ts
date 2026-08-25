@@ -54,7 +54,8 @@ export class MediaForm implements OnInit {
         effect(() => {
             const initial = this.initial();
             if (initial) {
-                this.form.patchValue(initial);
+                // El backend puede omitir campos de texto; el form espera strings.
+                this.form.patchValue({ ...initial, release_date: initial.release_date ?? '' });
             }
         });
 
