@@ -10,9 +10,9 @@ import { NavIcon, NavIconName } from '@layout/navbar/nav-icon';
 import { DESTINATIONS } from '@layout/navbar/primary-navigation';
 
 /**
- * Menú lateral del shell en móvil (<768px): la misma información que el
- * navbar de desktop (identidad, cuota, destinos, cuenta) en un drawer.
- * En tablet/desktop no se renderiza nada: el navbar inline ya lo cubre.
+ * Menú lateral del shell en móvil y tablet (<1024px): la misma información
+ * que el navbar de desktop (identidad, cuota, destinos, cuenta) en un drawer.
+ * En desktop la barra inline ya lo cubre y el burger no existe.
  */
 @Component({
     selector: 'app-mobile-menu',
@@ -336,12 +336,8 @@ import { DESTINATIONS } from '@layout/navbar/primary-navigation';
             font-variant-numeric: tabular-nums;
         }
 
-        /* Solo existe en móvil; el navbar inline cubre tablet/desktop. */
-        @media (min-width: 768px) {
-            .burger { display: none; }
-        }
-
-        @media (max-width: 767px) {
+        /* Móvil y tablet (<1024px); desktop mantiene la barra inline completa. */
+        @media (max-width: 1023px) {
             .burger { display: grid; }
         }
     `,

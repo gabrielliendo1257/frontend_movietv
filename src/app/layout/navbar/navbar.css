@@ -47,8 +47,9 @@ app-primary-navigation {
     align-items: center;
 }
 
-/* En móvil el drawer lateral (MobileMenu) sustituye al menú inline. */
-@media (max-width: 767px) {
+/* En móvil y tablet el drawer lateral (MobileMenu) sustituye al menú
+   de usuario inline; desktop conserva la barra completa. */
+@media (max-width: 1023px) {
     app-user-menu { display: none; }
 }
 
