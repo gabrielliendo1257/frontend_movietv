@@ -8,9 +8,10 @@
 >
     <video
         #video
-        [src]="src()"
-        [poster]="poster()"
+        [attr.src]="src() || null"
+        [attr.poster]="poster() || null"
         playsinline
+        preload="metadata"
         (click)="onVideoClick()"
         (dblclick)="toggleFullscreen()"
     ></video>

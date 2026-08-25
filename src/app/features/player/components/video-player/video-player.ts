@@ -160,7 +160,18 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
     };
 
     private readonly onErrorEvent = (): void => {
+        const video = this.videoEl()?.nativeElement;
+        const mediaError = video?.error;
+
+        if (mediaError) {
+            console.error(
+                `Error de video (code ${mediaError.code}): ${mediaError.message}`,
+                { src: video?.currentSrc || video?.src },
+            );
+        }
+
         this.isBuffering.set(false);
+        this.isPlaying.set(false);
     };
 
     private readonly onFullscreenChange = (): void => {
@@ -177,8 +188,21 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
         const video = this.videoEl()?.nativeElement;
         if (!video) return;
 
+        // No intentar reproducir sin una fuente válida asignada/cargada.
+        const hasSource = Boolean(this.src()) && video.networkState !== HTMLMediaElement.NETWORK_EMPTY;
+        if (!hasSource) {
+            console.warn('togglePlay ignorado: no hay una fuente de video disponible.');
+            return;
+        }
+
         if (video.paused) {
-            void video.play();
+            video.play().catch((error: unknown) => {
+                // Captura p.ej. NotSupportedError / AbortError para que no quede como
+                // "Uncaught (in promise)" y el estado de la UI sea consistente.
+                console.error('No se pudo iniciar la reproducción:', error);
+                this.isPlaying.set(false);
+                this.isBuffering.set(false);
+            });
         } else {
             video.pause();
         }
