@@ -23,7 +23,12 @@
     gap: 2rem;
 }
 
-@media (max-width: 760px) {
+/* Sin póster el contenido no puede quedar atrapado en la columna de 280px. */
+.detail-grid.no-poster {
+    grid-template-columns: 1fr;
+}
+
+@media (max-width: 767px) {
     .detail-grid {
         grid-template-columns: 1fr;
     }

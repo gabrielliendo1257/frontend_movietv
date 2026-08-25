@@ -206,7 +206,52 @@
     gap: 1.2rem;
 }
 
-@media screen and (max-width: 760px) {
+/* ─── Estados ─── */
+.movie-card-skeleton {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border-radius: 10px;
+    background: linear-gradient(
+        100deg,
+        rgba(255, 255, 255, 0.04) 40%,
+        rgba(255, 255, 255, 0.09) 50%,
+        rgba(255, 255, 255, 0.04) 60%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+    from { background-position: 120% 0; }
+    to { background-position: -80% 0; }
+}
+
+.empty-state {
+    border: 1px dashed var(--color-border);
+    border-radius: 12px;
+    padding: 2.5rem 1.5rem;
+    margin: 2rem 1rem;
+    max-width: 420px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.empty-state h1 {
+    color: var(--color-heading);
+    font-size: 1.15rem;
+    margin: 0;
+}
+
+.empty-state p {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    margin: 0 0 0.5rem;
+}
+
+@media screen and (max-width: 767px) {
     .featured-grid {
         grid-template-columns: 1fr;
     }

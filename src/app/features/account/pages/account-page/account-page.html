@@ -53,26 +53,28 @@
             @if (homeView.recentUploads.length === 0) {
                 <p class="muted">Todavía no tienes subidas.</p>
             } @else {
-                <table class="uploads-table">
-                    <thead>
-                        <tr>
-                            <th>Archivo</th>
-                            <th>Tamaño</th>
-                            <th>Estado</th>
-                            <th>Fecha</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (upload of homeView.recentUploads; track upload.storageId) {
+                <div class="table-wrap">
+                    <table class="uploads-table">
+                        <thead>
                             <tr>
-                                <td class="object-key">{{ upload.objectKey }}</td>
-                                <td>{{ upload.sizeInBytes | bytes }}</td>
-                                <td><span class="badge">{{ upload.status }}</span></td>
-                                <td>{{ upload.createdAt }}</td>
+                                <th>Archivo</th>
+                                <th>Tamaño</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @for (upload of homeView.recentUploads; track upload.storageId) {
+                                <tr>
+                                    <td class="object-key">{{ upload.objectKey }}</td>
+                                    <td>{{ upload.sizeInBytes | bytes }}</td>
+                                    <td><span class="badge">{{ upload.status }}</span></td>
+                                    <td>{{ upload.createdAt }}</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
         </div>
     }

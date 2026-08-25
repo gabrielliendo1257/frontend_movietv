@@ -83,7 +83,7 @@
     gap: 1rem;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 767px) {
     .overview-grid {
         grid-template-columns: 1fr;
     }

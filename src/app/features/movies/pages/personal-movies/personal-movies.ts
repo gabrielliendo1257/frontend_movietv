@@ -14,15 +14,23 @@ export class PersonalMovies {
 
     readonly movies = signal<WebMovie[] | null>(null);
     readonly loading = signal(true);
+    readonly error = signal(false);
 
     constructor() {
+        this.load();
+    }
+
+    load(): void {
+        this.loading.set(true);
+        this.error.set(false);
         this.moviesApi.list().subscribe({
             next: (movies) => {
                 this.movies.set(movies);
                 this.loading.set(false);
             },
             error: () => {
-                this.movies.set([]);
+                // El fallo no se enmascara como catálogo vacío.
+                this.error.set(true);
                 this.loading.set(false);
             },
         });

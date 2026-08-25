@@ -8,7 +8,7 @@
                 <p>Película no encontrada.</p>
             </div>
         } @else {
-            <div class="detail-grid">
+            <div class="detail-grid" [class.no-poster]="!m.poster_path">
                 @if (m.poster_path) {
                     <img
                         class="detail-poster"

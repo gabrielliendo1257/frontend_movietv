@@ -12,6 +12,12 @@ export class SettingsPage {
     private readonly accountStore = inject(AccountStore);
 
     readonly home = this.accountStore.home;
+    readonly loading = this.accountStore.loading;
+    readonly error = this.accountStore.error;
+
+    retry(): void {
+        this.accountStore.reload();
+    }
 
     quotaPercent(quota: { quotaBytes: number; usedBytes: number }): number {
         if (!quota.quotaBytes) return 0;

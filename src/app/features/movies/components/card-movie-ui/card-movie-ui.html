@@ -1,4 +1,4 @@
-<div class="card" (click)="onCardClick()" [attr.role]="link() ? 'link' : null" tabindex="0">
+<div class="card" (click)="onCardClick()" [attr.role]="link() ? 'button' : null" tabindex="0">
     <div class="poster">
         @if (posterUrl()) {
             <img [src]="posterUrl()" [alt]="title()" loading="lazy"/>

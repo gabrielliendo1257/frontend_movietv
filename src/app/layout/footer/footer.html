@@ -1,1 +1,15 @@
-<p>footer works!</p>
+<footer class="footer">
+    <div class="footer-inner">
+        <a class="brand" routerLink="/movies" aria-label="MVFLIX — Home">
+            <span class="brand-m">M</span><span class="brand-v">V</span><span class="brand-name">FLIX</span>
+        </a>
+
+        <nav class="footer-links" aria-label="Pie de página">
+            <a routerLink="/movies">Home</a>
+            <a routerLink="/catalog">Catalog</a>
+            <a routerLink="/libraries">Libraries</a>
+        </nav>
+
+        <p class="legal">© {{ year }} MVFLIX — proyecto personal de práctica.</p>
+    </div>
+</footer>

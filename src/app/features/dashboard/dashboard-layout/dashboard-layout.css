@@ -1,6 +1,6 @@
 .dash-shell {
     display: flex;
-    min-height: calc(100vh - 64px);
+    min-height: calc(100vh - var(--navbar-height));
 }
 
 .dash-sidebar {
@@ -81,7 +81,7 @@
 }
 
 /* --- Mobile: sidebar como drawer --- */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .dash-shell {
         display: block;
     }

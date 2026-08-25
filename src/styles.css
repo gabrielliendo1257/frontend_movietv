@@ -141,10 +141,8 @@ table {
     --space-lg: 24px;
     --space-xl: 40px;
 
-    /* Breakpoints */
-    --breakpoint-mobile: 480px;
-    --breakpoint-tablet: 768px;
-    --breakpoint-desktop: 1200px;
+    /* Altura del navbar global (54px en móvil, ver media queries) */
+    --navbar-height: 60px;
 
     /* Tipografía responsiva */
     --text-xs: clamp(0.75rem, 0.7vw, 0.8rem);
@@ -168,9 +166,14 @@ body {
     }
 }
 
-@media (max-width: 768px) {
+/* En móvil se mantiene legible: el piso de 12px encogía toda la app. */
+@media (max-width: 767px) {
     body {
-        font-size: var(--text-xs);
+        font-size: 0.9375rem;
+    }
+
+    :root {
+        --navbar-height: 54px;
     }
 }
 
@@ -206,76 +209,55 @@ body {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
-html, body { height: 100%; }
-body { margin: 0; font-family: 'Inter', Roboto, "Helvetica Neue", sans-serif; background: var(--color-bg); color: var(--color-text); }
-
+/* =======================================
+   🔘 Botón compartido del tema
+   (upload, bibliotecas, cuenta, modales). Las páginas pueden
+   redefinirlo, pero la base ya vive en el lenguaje visual de la app.
+   ======================================= */
 .btn {
-    background: #646cff;
-    padding: 10px 18px;
-    border-radius: 8px;
-    border: none;
-    color: #fff;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.25s;
-
-    &:hover {
-        background: #7c82ff;
-    }
-}
-
-.button__send {
-    line-height: 1;
-    text-decoration: none;
     display: inline-flex;
-    border: none;
-    cursor: pointer;
     align-items: center;
-    gap: 0.75rem;
-    background-color: #7808d0;
-    color: #fff;
-    border-radius: 10rem;
-    font-weight: 600;
-    padding: 0.75rem 1.5rem;
-    padding-left: 20px;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.95rem;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text);
+    font-size: 0.85rem;
+    font-weight: 500;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    transition: background-color 0.3s;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-.button__icon-wrapper {
-    flex-shrink: 0;
-    width: 25px;
-    height: 25px;
-    position: relative;
-    color: #7808d0;
-    background-color: #fff;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    overflow: hidden;
+.btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #3a3a44;
 }
 
-.button__send:hover {
-    background-color: #000;
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-.button__send:hover .button__icon-wrapper {
-    color: #000;
+.btn-primary {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+    border-color: transparent;
+    color: #fff;
+    font-weight: 600;
 }
 
-.button__icon-svg--copy {
-    position: absolute;
-    transform: translate(-150%, 150%);
+.btn-primary:hover:not(:disabled) {
+    filter: brightness(1.12);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
 }
 
-.button__send:hover .button__icon-svg:first-child {
-    transition: transform 0.3s ease-in-out;
-    transform: translate(150%, -150%);
+.btn-danger {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--color-danger) 45%, transparent);
+    color: var(--color-danger);
 }
 
-.button__send:hover .button__icon-svg--copy {
-    transition: transform 0.3s ease-in-out 0.1s;
-    transform: translate(0);
+.btn-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-danger) 12%, transparent);
 }

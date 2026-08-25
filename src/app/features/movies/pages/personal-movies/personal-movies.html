@@ -1,10 +1,16 @@
 <div class="movies-page">
     @if (loading()) {
-        <div class="content__movies">
+        <div class="content__movies" aria-busy="true" aria-label="Cargando catálogo">
             @for (_ of [].constructor(6); track $index) {
                 <div class="movie-card-skeleton"></div>
             }
         </div>
+    } @else if (error()) {
+        <section class="empty-state">
+            <h1>No se pudo cargar tu catálogo</h1>
+            <p>Revisa tu conexión e inténtalo de nuevo.</p>
+            <button class="btn" type="button" (click)="load()">Reintentar</button>
+        </section>
     } @else if (movies(); as list) {
         @if (list.length) {
             <div class="content__movies">

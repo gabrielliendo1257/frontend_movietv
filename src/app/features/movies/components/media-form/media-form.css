@@ -63,6 +63,14 @@
     gap: 0.9rem;
 }
 
+/* Pares Year+Duration / Country+Language apretados en móviles chicos. */
+@media (max-width: 400px) {
+    .field-row {
+        flex-direction: column;
+        gap: 0.9rem;
+    }
+}
+
 .flex-1 {
     flex: 1;
 }
@@ -108,6 +116,9 @@
     cursor: pointer;
     color: var(--color-border);
     font-size: 1.1rem;
+    padding: 0.3rem 0.15rem;
+    margin: -0.3rem -0.15rem;
+    user-select: none;
 }
 
 .star.filled {

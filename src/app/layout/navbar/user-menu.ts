@@ -3,6 +3,8 @@ import { HostListener } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/session/auth.service';
 import { ShellStore } from '@features/shell/data-access/shell-store';
+import { ShellQuota } from '@features/shell/models/shell-context';
+import { BytesPipe } from '@shared/pipes/bytes.pipe';
 import { ShellAccess } from '@layout/access';
 
 /**
@@ -34,7 +36,24 @@ import { ShellAccess } from '@layout/access';
                 @if (menuOpen()) {
                     <div class="dropdown" role="menu">
                         @if (email(); as mail) {
-                            <div class="dropdown-header">{{ email() }}</div>
+                            <div class="dropdown-header">{{ mail }}</div>
+                        }
+
+                        <!-- Cuota: en móvil/tablet vive aquí; el pill del navbar se oculta por espacio. -->
+                        @if (quota(); as q) {
+                            <a class="quota-row" routerLink="/dashboard/settings" (click)="close()"
+                               [attr.aria-label]="'Almacenamiento: ' + quotaDetail(q)">
+                                <span class="quota-line">
+                                    <span class="quota-label">Storage</span>
+                                    <span class="quota-pct" [class.danger]="nearLimit(q)">{{ q.usedPercent }}%</span>
+                                </span>
+                                <span class="quota-track" aria-hidden="true">
+                                    <span class="quota-fill"
+                                          [class.danger]="nearLimit(q)"
+                                          [style.width.%]="q.usedPercent"></span>
+                                </span>
+                                <span class="quota-detail">{{ quotaDetail(q) }}</span>
+                            </a>
                         }
 
                         <a class="dropdown-item" role="menuitem" routerLink="/account"
@@ -134,6 +153,68 @@ import { ShellAccess } from '@layout/access';
             white-space: nowrap;
         }
 
+        /* Cuota dentro del menú (visible también en móvil). */
+        .quota-row {
+            display: block;
+            margin: 0.15rem 0.2rem 0.35rem;
+            padding: 0.5rem 0.6rem;
+            border: 1px solid #26262f;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            text-decoration: none;
+        }
+
+        .quota-row:hover { background: rgba(255, 255, 255, 0.06); }
+
+        .quota-line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .quota-label {
+            font-size: 0.66rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #92929e;
+        }
+
+        .quota-pct {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #ff6d3f;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .quota-pct.danger { color: #ff6d5e; }
+
+        .quota-track {
+            display: block;
+            height: 4px;
+            margin: 0.3rem 0 0.25rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .quota-fill {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: #ff6d3f;
+        }
+
+        .quota-fill.danger { background: #ff6d5e; }
+
+        .quota-detail {
+            display: block;
+            font-size: 0.68rem;
+            color: #6d6d7a;
+            font-variant-numeric: tabular-nums;
+        }
+
         .dropdown-item {
             display: block;
             width: 100%;
@@ -190,12 +271,15 @@ export class UserMenu {
     private readonly shell = inject(ShellStore);
     readonly access = inject(ShellAccess);
 
+    private readonly bytes = new BytesPipe();
+
     readonly menuOpen = signal(false);
 
     /** Avatar roto → fallback a iniciales sin recargar nada. */
     readonly avatarFailed = signal(false);
 
     readonly profile = this.shell.user;
+    readonly quota = this.shell.quota;
 
     readonly username = computed(() => {
         const user = this.profile();
@@ -210,6 +294,14 @@ export class UserMenu {
         const name = this.username().trim() || this.profile()?.username || '';
         return name ? name[0] : null;
     });
+
+    quotaDetail(quota: ShellQuota): string {
+        return `${this.bytes.transform(quota.usedBytes)} de ${this.bytes.transform(quota.limitBytes)} · ${quota.usedPercent}%`;
+    }
+
+    nearLimit(quota: ShellQuota): boolean {
+        return (quota.usedPercent ?? 0) >= 90;
+    }
 
     signIn(): void {
         this.auth.startLoginFlow();

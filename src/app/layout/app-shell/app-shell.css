@@ -7,3 +7,11 @@
 .shell-content {
     flex: 1;
 }
+
+/* El bottom-nav del navbar es fijo; reserva su altura para que
+   el contenido y el footer no queden debajo en móvil. */
+@media (max-width: 767px) {
+    :host {
+        padding-bottom: calc(58px + env(safe-area-inset-bottom));
+    }
+}

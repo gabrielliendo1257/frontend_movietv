@@ -41,6 +41,12 @@
 
 .profile-row .value {
     color: var(--color-heading);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.error-section {
+    align-items: flex-start;
 }
 
 .quota-track {
