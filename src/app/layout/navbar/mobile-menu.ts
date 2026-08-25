@@ -6,6 +6,7 @@ import { ShellStore } from '@features/shell/data-access/shell-store';
 import { ShellQuota } from '@features/shell/models/shell-context';
 import { BytesPipe } from '@shared/pipes/bytes.pipe';
 import { ShellAccess } from '@layout/access';
+import { NavIcon, NavIconName } from '@layout/navbar/nav-icon';
 import { DESTINATIONS } from '@layout/navbar/primary-navigation';
 
 /**
@@ -15,7 +16,7 @@ import { DESTINATIONS } from '@layout/navbar/primary-navigation';
  */
 @Component({
     selector: 'app-mobile-menu',
-    imports: [RouterLink],
+    imports: [RouterLink, NavIcon],
     template: `
         <button class="burger" type="button" (click)="open.set(!open())"
                 [attr.aria-expanded]="open()" aria-label="Abrir menú"
@@ -83,7 +84,7 @@ import { DESTINATIONS } from '@layout/navbar/primary-navigation';
                 <nav class="section" aria-label="Destinos">
                     @for (destination of destinations; track destination.route) {
                         <a class="item" [routerLink]="destination.route" (click)="close()">
-                            <span class="glyph" aria-hidden="true">{{ destination.icon }}</span>
+                            <app-nav-icon [name]="destination.icon" />
                             {{ destination.label }}
                         </a>
                     }
@@ -93,17 +94,17 @@ import { DESTINATIONS } from '@layout/navbar/primary-navigation';
                 @if (access.isAuthenticated()) {
                     <nav class="section" aria-label="Cuenta">
                         <a class="item" routerLink="/account" (click)="close()">
-                            <span class="glyph" aria-hidden="true">👤</span> Profile
+                            <app-nav-icon name="profile" /> Profile
                         </a>
                         <a class="item" routerLink="/dashboard/settings" (click)="close()">
-                            <span class="glyph" aria-hidden="true">⚙️</span> Settings
+                            <app-nav-icon name="settings" /> Settings
                         </a>
                         <a class="item" routerLink="/dashboard/activity" (click)="close()">
-                            <span class="glyph" aria-hidden="true">📊</span> Activity
+                            <app-nav-icon name="activity" /> Activity
                         </a>
                         @if (access.canAccessAdmin()) {
                             <a class="item" routerLink="/dashboard" (click)="close()">
-                                <span class="glyph" aria-hidden="true">🛡️</span> Admin Dashboard
+                                <app-nav-icon name="admin" /> Admin Dashboard
                             </a>
                         }
                     </nav>
@@ -271,7 +272,8 @@ import { DESTINATIONS } from '@layout/navbar/primary-navigation';
 
         .item:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
 
-        .glyph { width: 1.2rem; text-align: center; }
+        .item app-nav-icon { color: #92929e; flex-shrink: 0; }
+        .item:hover app-nav-icon { color: currentColor; }
 
         /* Cuota: mismo bloque que el dropdown de usuario */
         .quota-row {

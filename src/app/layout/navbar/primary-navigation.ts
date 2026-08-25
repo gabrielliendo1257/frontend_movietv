@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { NavIcon, NavIconName } from '@layout/navbar/nav-icon';
 
 interface NavDestination {
     label: string;
     route: string;
-    /** Glyph para la bottom-nav en mobile. */
-    icon: string;
+    icon: NavIconName;
 }
 
 /**
@@ -14,14 +14,14 @@ interface NavDestination {
  * Compartidos con el drawer lateral (MobileMenu).
  */
 export const DESTINATIONS: NavDestination[] = [
-    { label: 'Home', route: '/movies', icon: '🏠' },
-    { label: 'Catalog', route: '/catalog', icon: '▦' },
-    { label: 'Libraries', route: '/libraries', icon: '📚' },
+    { label: 'Home', route: '/movies', icon: 'home' },
+    { label: 'Catalog', route: '/catalog', icon: 'catalog' },
+    { label: 'Libraries', route: '/libraries', icon: 'libraries' },
 ];
 
 @Component({
     selector: 'app-primary-navigation',
-    imports: [RouterLink, RouterLinkActive],
+    imports: [RouterLink, RouterLinkActive, NavIcon],
     template: `
         <div class="destinations">
             @for (destination of destinations; track destination.route) {
@@ -41,7 +41,9 @@ export const DESTINATIONS: NavDestination[] = [
                     [routerLink]="destination.route"
                     routerLinkActive="active"
                 >
-                    <span class="bottom-icon" aria-hidden="true">{{ destination.icon }}</span>
+                    <span class="bottom-icon" aria-hidden="true">
+                        <app-nav-icon [name]="destination.icon" />
+                    </span>
                     <span class="bottom-label">{{ destination.label }}</span>
                 </a>
             }
@@ -99,7 +101,7 @@ export const DESTINATIONS: NavDestination[] = [
                 text-decoration: none;
             }
 
-            .bottom-icon { font-size: 1.1rem; line-height: 1.2; }
+            .bottom-icon { line-height: 0; }
             .bottom-label { letter-spacing: 0.01em; }
             .bottom-link.active { color: #ff6d3f; }
         }
