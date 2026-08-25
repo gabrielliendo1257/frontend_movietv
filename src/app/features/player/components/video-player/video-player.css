@@ -321,3 +321,22 @@
         height: 60px;
     }
 }
+
+/* ─── Error de medio ─── */
+.media-error {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: min(90%, 520px);
+    padding: 10px 16px;
+    border-radius: 10px;
+    background: rgba(20, 8, 8, 0.92);
+    border: 1px solid rgba(255, 109, 94, 0.45);
+    color: #ffb4ab;
+    font-size: 13px;
+}

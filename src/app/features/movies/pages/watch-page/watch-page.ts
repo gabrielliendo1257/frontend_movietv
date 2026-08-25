@@ -21,6 +21,9 @@ export class WatchPage implements OnInit {
     readonly title = this.store.title;
     readonly year = this.store.year;
     readonly overview = this.store.overview;
+    readonly loading = this.store.loading;
+    readonly error = this.store.error;
+    readonly resumeSeconds = this.store.resumeSeconds;
 
     ngOnInit(): void {
         this.route.paramMap.subscribe(() => {

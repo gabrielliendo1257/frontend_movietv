@@ -205,3 +205,51 @@
         font-size: 21px;
     }
 }
+
+/* ─── Estados de la sesión de playback ─── */
+.player-loading {
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    background: linear-gradient(100deg, #14141b 40%, #1c1c26 50%, #14141b 60%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite linear;
+}
+
+@keyframes shimmer {
+    to { background-position: -200% 0; }
+}
+
+.playback-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 109, 94, 0.35);
+    background: rgba(239, 68, 68, 0.06);
+    text-align: center;
+    padding: 24px;
+}
+
+.playback-error-message {
+    margin: 0;
+    color: #ffb4ab;
+    font-size: 15px;
+    max-width: 420px;
+}
+
+.btn-back-inline {
+    border: 1px solid #2a2a35;
+    background: transparent;
+    color: #e4e4ec;
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.btn-back-inline:hover {
+    border-color: #ff6d3f;
+}

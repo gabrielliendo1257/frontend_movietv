@@ -24,6 +24,11 @@ interface MenuState {
 export class VideoPlayer implements AfterViewInit, OnDestroy {
     readonly src = input<string>('');
     readonly poster = input<string>('');
+    /** Posición de reanudación en segundos (resume del BFF). */
+    readonly startTime = input(0);
+
+    /** Error de decodificación/formato/red del propio <video>. */
+    readonly mediaError = signal<string | null>(null);
 
     readonly videoEl = viewChild<ElementRef<HTMLVideoElement>>('video');
     readonly rootEl = viewChild<ElementRef<HTMLDivElement>>('root');
@@ -114,6 +119,12 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
         if (!video) return;
 
         this.duration.set(video.duration || 0);
+
+        // Resume: solo si el usuario aún no interactuó con la línea de tiempo.
+        const startAt = this.startTime();
+        if (startAt > 0 && startAt < video.duration && !this.isScrubbing) {
+            video.currentTime = startAt;
+        }
     };
 
     private readonly onProgress = (): void => {
@@ -149,6 +160,7 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
 
     private readonly onPlayingEvent = (): void => {
         this.isBuffering.set(false);
+        this.mediaError.set(null);
     };
 
     private readonly onSeeking = (): void => {
@@ -270,10 +282,14 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
         const video = this.videoEl()?.nativeElement;
         if (!video) return;
 
-        if (this.document.pictureInPictureElement) {
-            await this.document.exitPictureInPicture();
-        } else {
-            await video.requestPictureInPicture();
+        try {
+            if (this.document.pictureInPictureElement) {
+                await this.document.exitPictureInPicture();
+            } else {
+                await video.requestPictureInPicture();
+            }
+        } catch {
+            // PiP puede fallar por política del navegador; no rompe la reproducción.
         }
     }
 
@@ -419,5 +435,21 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
         }
 
         return `${minutes}:${String(secs).padStart(2, '0')}`;
+    }
+}
+
+/** MEDIA_ERR_* del estándar HTML → mensaje accionable. */
+function describeMediaError(code: number | undefined): string {
+    switch (code) {
+        case 1:
+            return 'Reproducción interrumpida.';
+        case 2:
+            return 'Se perdió la conexión mientras se cargaba el video.';
+        case 3:
+            return 'El video está dañado o su códec no es compatible.';
+        case 4:
+            return 'Este formato no se puede reproducir en el navegador (p. ej. MKV). Usa MP4/H.264 o WebM.';
+        default:
+            return 'No se pudo reproducir el video.';
     }
 }

@@ -31,25 +31,38 @@
     </header>
 
     <main class="watch-main">
-        <div class="player-shell">
-            <app-video-player [src]="videoSrc()" [poster]="poster()"></app-video-player>
-        </div>
+        @if (loading()) {
+            <div class="player-shell player-loading" aria-label="Cargando"></div>
+        } @else if (error(); as playbackError) {
+            <div class="playback-error">
+                <p class="playback-error-message">{{ playbackError }}</p>
+                <button class="btn-back-inline" type="button" (click)="goBack()">Volver al catálogo</button>
+            </div>
+        } @else {
+            <div class="player-shell">
+                <app-video-player
+                    [src]="videoSrc()"
+                    [poster]="poster()"
+                    [startTime]="resumeSeconds() ?? 0"
+                ></app-video-player>
+            </div>
 
-        <section class="movie-info">
-            <div class="movie-info-left">
-                @if (poster()) {
-                    <img class="info-poster" [src]="poster()" [alt]="title()"/>
-                }
-            </div>
-            <div class="movie-info-main">
-                <h1 class="movie-title">{{ title() }}</h1>
-                @if (year()) {
-                    <div class="movie-meta">{{ year() }}</div>
-                }
-                @if (overview()) {
-                    <p class="movie-overview">{{ overview() }}</p>
-                }
-            </div>
-        </section>
+            <section class="movie-info">
+                <div class="movie-info-left">
+                    @if (poster()) {
+                        <img class="info-poster" [src]="poster()" [alt]="title()"/>
+                    }
+                </div>
+                <div class="movie-info-main">
+                    <h1 class="movie-title">{{ title() }}</h1>
+                    @if (year()) {
+                        <div class="movie-meta">{{ year() }}</div>
+                    }
+                    @if (overview()) {
+                        <p class="movie-overview">{{ overview() }}</p>
+                    }
+                </div>
+            </section>
+        }
     </main>
 </div>

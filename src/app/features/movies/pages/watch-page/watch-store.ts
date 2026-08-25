@@ -1,13 +1,8 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { API_BASE_URL } from '@core/config/api-base-url';
 import { MoviesApi } from '@features/movies/data-access/movies-api';
-import { StreamingApi } from '@features/movies/data-access/streaming-api';
-import { MovieStreamStore } from '@features/movies/data-access/movie-stream-store';
+import { PlaybackApi } from '@features/player/data-access/playback-api';
 import { WebMovie } from '@features/movies/models/web-movie';
-
-const SAMPLE_VIDEO_URL =
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
 
 /**
  * Estado de la experiencia de reproducción para una navegación.
@@ -16,17 +11,19 @@ const SAMPLE_VIDEO_URL =
 @Injectable()
 export class WatchStore {
     private readonly moviesApi = inject(MoviesApi);
-    private readonly streamingApi = inject(StreamingApi);
-    private readonly movieStreamStore = inject(MovieStreamStore);
-    private readonly baseUrl = inject(API_BASE_URL);
+    private readonly playbackApi = inject(PlaybackApi);
 
     readonly movie = signal<WebMovie | null>(null);
-    readonly videoSrc = signal(SAMPLE_VIDEO_URL);
+    readonly videoSrc = signal('');
     readonly poster = signal('');
     readonly title = signal('');
     readonly year = signal('');
     readonly overview = signal('');
+    /** Posición de reanudación (segundos) reportada por la sesión. */
+    readonly resumeSeconds = signal<number | null>(null);
     readonly loading = signal(true);
+    /** Mensaje legible cuando la sesión no pudo componerse. */
+    readonly error = signal<string | null>(null);
 
     load(id: number): void {
         this.reset();
@@ -35,72 +32,86 @@ export class WatchStore {
         this.moviesApi.findById(id).subscribe({
             next: (movie) => {
                 this.movie.set(movie);
-                this.applyMedia(movie);
+                this.title.set(movie.title);
+                this.year.set(movie.release_date?.slice(0, 4) ?? '');
+                this.overview.set(movie.overview ?? '');
+                const posterUrl = this.resolvePosterUrl(movie.poster_path);
+                if (posterUrl) {
+                    this.poster.set(posterUrl);
+                }
+            },
+            error: (error: unknown) => {
+                this.loading.set(false);
+                this.error.set(toMessage(error));
+            },
+        });
+
+        this.playbackApi.start(id).subscribe({
+            next: (session) => {
+                this.videoSrc.set(session.source.url);
+                if (!this.poster()) this.poster.set(resolvePath(session.media.posterPath));
+                if (!this.title()) this.title.set(session.media.title);
+                this.resumeSeconds.set(session.resumeSeconds);
                 this.loading.set(false);
             },
             error: (error: unknown) => {
-                if (error instanceof HttpErrorResponse && error.status !== 404) {
-                    console.error('Web movie unavailable', error);
-                }
                 this.loading.set(false);
+                this.error.set(toMessage(error));
             },
         });
-    }
-
-    /** Ticket del BFF y, si no está disponible, sesión directa por objectId. */
-    private applyMedia(movie: WebMovie): void {
-        this.title.set(movie.title);
-        this.year.set(movie.release_date?.slice(0, 4) ?? '');
-        this.overview.set(movie.overview ?? '');
-        if (movie.poster_path) {
-            this.poster.set(this.resolvePosterUrl(movie.poster_path));
-        }
-        this.resolveStreaming(movie);
     }
 
     private reset(): void {
         this.movie.set(null);
-        this.videoSrc.set(SAMPLE_VIDEO_URL);
+        this.videoSrc.set('');
         this.poster.set('');
         this.title.set('');
         this.year.set('');
         this.overview.set('');
+        this.resumeSeconds.set(null);
+        this.error.set(null);
     }
 
-    private resolvePosterUrl(posterPath: string): string {
-        return posterPath.startsWith('http')
-            ? posterPath
-            : `https://image.tmdb.org/t/p/w500${posterPath}`;
+    private resolvePosterUrl(posterPath: string | null | undefined): string | null {
+        if (!posterPath) return null;
+        return posterPath.startsWith('http') ? posterPath : `https://image.tmdb.org/t/p/w500${posterPath}`;
     }
+}
 
-    private resolveStreaming(movie: WebMovie): void {
-        this.streamingApi.getStreamTicket(movie.id).subscribe({
-            next: (ticket) => {
-                if (!ticket.url) {
-                    this.fallbackStream(movie);
-                    return;
-                }
-                this.videoSrc.set(
-                    ticket.url.startsWith('http') ? ticket.url : this.baseUrl + ticket.url,
-                );
-            },
-            error: (error: unknown) => {
-                console.error('Stream ticket unavailable, falling back', error);
-                this.fallbackStream(movie);
-            },
-        });
+function resolvePath(path: string | null): string {
+    return path ?? '';
+}
+
+/** Mapea los códigos estables de la experiencia playback a mensajes de UI. */
+function toMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+        const body = error.error as { code?: string; message?: string } | null;
+        if (body?.message) return body.message;
+
+        switch (body?.code ?? byStatus(error.status)) {
+            case 'MEDIA_NOT_FOUND':
+                return 'Esta media no existe o no está disponible.';
+            case 'PLAYBACK_FORBIDDEN':
+                return 'No tienes acceso a esta película.';
+            case 'MEDIA_NOT_READY':
+                return 'La película todavía no está lista para reproducirse.';
+            case 'NO_PLAYABLE_ASSET':
+                return 'Todavía no hay contenido subido para esta película.';
+            case 'SOURCE_UNAVAILABLE':
+                return 'El contenido no está disponible en este momento. Intenta de nuevo.';
+            default:
+                return error.status === 0
+                    ? 'Sin conexión con el servidor.'
+                    : `Error ${error.status} al iniciar la reproducción.`;
+        }
     }
+    return error instanceof Error ? error.message : 'No se pudo iniciar la reproducción.';
+}
 
-    private fallbackStream(movie: WebMovie): void {
-        const objectId = movie.objectId ?? this.movieStreamStore.getStorageId(movie.id);
-        if (objectId == null) return;
-
-        this.streamingApi.stream(String(objectId)).subscribe({
-            next: (session) => {
-                if (session.streamingUrl) this.videoSrc.set(session.streamingUrl);
-            },
-            error: (error: unknown) =>
-                console.error('Streaming unavailable, using sample video', error),
-        });
-    }
+function byStatus(status: number): string | undefined {
+    if (status === 404) return 'MEDIA_NOT_FOUND';
+    if (status === 403) return 'PLAYBACK_FORBIDDEN';
+    if (status === 409) return 'MEDIA_NOT_READY';
+    if (status === 503) return 'SOURCE_UNAVAILABLE';
+    return undefined;
 }

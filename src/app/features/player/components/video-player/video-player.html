@@ -16,8 +16,21 @@
         (dblclick)="toggleFullscreen()"
     ></video>
 
+    <!-- Error de medio: formato/red/decodificación -->
+    @if (mediaError(); as error) {
+        <div class="media-error" role="alert">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>{{ error }}</span>
+        </div>
+    }
+
     <!-- Big center play -->
-    @if (!isPlaying() && !isBuffering()) {
+    @if (!isPlaying() && !isBuffering() && !mediaError()) {
         <button class="center-play" (click)="togglePlay()" [attr.aria-label]="'Play'">
             <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="5 3 19 12 5 21 5 3"/>
