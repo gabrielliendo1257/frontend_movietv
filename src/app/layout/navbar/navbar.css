@@ -4,11 +4,23 @@
 
 .navbar {
     background: rgba(12, 12, 15, 0.88);
-    backdrop-filter: blur(12px);
     border-bottom: 1px solid #1e1e26;
     position: sticky;
     top: 0;
     z-index: 100;
+}
+
+/* El blur vive en un pseudo-elemento: un backdrop-filter directo sobre
+   .navbar convertiría la barra en containing block de los position:fixed
+   descendientes y el drawer lateral mediría la barra en vez del viewport. */
+.navbar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    pointer-events: none;
 }
 
 .nav-inner {
