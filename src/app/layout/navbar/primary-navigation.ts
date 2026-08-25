@@ -11,8 +11,9 @@ interface NavDestination {
 /**
  * Destinos globales del shell. Las acciones contextuales (editar, visibilidad,
  * borrar…) viven dentro de cada experiencia, nunca aquí.
+ * Compartidos con el drawer lateral (MobileMenu).
  */
-const DESTINATIONS: NavDestination[] = [
+export const DESTINATIONS: NavDestination[] = [
     { label: 'Home', route: '/movies', icon: '🏠' },
     { label: 'Catalog', route: '/catalog', icon: '▦' },
     { label: 'Libraries', route: '/libraries', icon: '📚' },

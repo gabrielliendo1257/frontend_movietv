@@ -2,6 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AddMediaAction } from '@layout/navbar/add-media-action';
 import { GlobalSearch } from '@layout/navbar/global-search';
+import { MobileMenu } from '@layout/navbar/mobile-menu';
 import { NotificationButton } from '@layout/navbar/notification-button';
 import { PrimaryNavigation } from '@layout/navbar/primary-navigation';
 import { QuotaIndicator } from '@layout/navbar/quota-indicator';
@@ -14,6 +15,7 @@ import { UploadFacade } from '@features/uploads/services/upload-facade';
  * Barra superior del shell. Composición por responsabilidad:
  * destinos (PrimaryNavigation), acción primaria (AddMediaAction),
  * búsqueda global, actividad, cuota y contexto de usuario.
+ * En móvil (<768px) el contexto vive en el drawer lateral (MobileMenu).
  */
 @Component({
     selector: 'app-navbar',
@@ -25,6 +27,7 @@ import { UploadFacade } from '@features/uploads/services/upload-facade';
         NotificationButton,
         QuotaIndicator,
         UserMenu,
+        MobileMenu,
     ],
     templateUrl: './navbar.html',
     styleUrl: './navbar.css',

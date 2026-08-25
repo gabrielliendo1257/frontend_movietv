@@ -47,6 +47,11 @@ app-primary-navigation {
     align-items: center;
 }
 
+/* En móvil el drawer lateral (MobileMenu) sustituye al menú inline. */
+@media (max-width: 767px) {
+    app-user-menu { display: none; }
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 1023px) {
     .nav-inner { gap: 1rem; padding: 0 0.9rem; }
