@@ -1,4 +1,5 @@
 import { Component, computed, inject, model, output, signal } from '@angular/core';
+import { ScrollLock } from '@shared/scroll-lock';
 import { FormsModule } from '@angular/forms';
 import { lastValueFrom } from 'rxjs';
 import {
@@ -23,7 +24,7 @@ const CACHE_MAX_ENTRIES = 100;
 /** Selección de candidato TMDB dentro de la experiencia de alta/edición. */
 @Component({
     selector: 'app-movie-search-modal',
-    imports: [FormsModule],
+    imports: [ ScrollLock,FormsModule],
     templateUrl: './movie-search-modal.html',
     styleUrl: './movie-search-modal.css',
 })

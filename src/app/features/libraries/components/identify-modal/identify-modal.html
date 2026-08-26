@@ -1,5 +1,5 @@
 @if (isOpen()) {
-    <div class="backdrop" (click)="close()">
+    <div class="backdrop" [appScrollLock]="true" (click)="close()">
         <div class="modal" (click)="$event.stopPropagation()">
             <div class="header">
                 <h2 class="title">Identify</h2>

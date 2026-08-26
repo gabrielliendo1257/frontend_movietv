@@ -1,22 +1,32 @@
 import { Component, HostListener, input, model, output } from '@angular/core';
+import { ScrollLock } from '@shared/scroll-lock';
 
 /**
  * Confirmación de acciones destructivas. Patrón visual de los modales del
- * proyecto (backdrop + panel); el estado vive en el padre vía `open`.
+ * proyecto (backdrop + panel anidado); el estado vive en el padre vía `open`.
+ * El backdrop bloquea el scroll del body mientras el diálogo está abierto.
  */
 @Component({
     selector: 'app-confirm-dialog',
+    imports: [ScrollLock],
     template: `
         @if (open()) {
-            <div class="backdrop" (click)="cancel()" aria-hidden="true"></div>
-            <div class="modal" role="alertdialog" aria-modal="true" [attr.aria-label]="title()">
-                <h2 class="title">{{ title() }}</h2>
-                <p class="message">{{ message() }}</p>
-                <div class="actions">
-                    <button class="btn" type="button" (click)="cancel()">Cancelar</button>
-                    <button class="btn-danger" type="button" (click)="confirm()">
-                        {{ confirmLabel() }}
-                    </button>
+            <div class="backdrop" [appScrollLock]="true" (click)="cancel()">
+                <div
+                    class="modal"
+                    role="alertdialog"
+                    aria-modal="true"
+                    [attr.aria-label]="title()"
+                    (click)="$event.stopPropagation()"
+                >
+                    <h2 class="title">{{ title() }}</h2>
+                    <p class="message">{{ message() }}</p>
+                    <div class="actions">
+                        <button class="btn" type="button" (click)="cancel()">Cancelar</button>
+                        <button class="btn-danger" type="button" (click)="confirm()">
+                            {{ confirmLabel() }}
+                        </button>
+                    </div>
                 </div>
             </div>
         }

@@ -1,4 +1,5 @@
 import { Component, inject, input, model, output, signal } from '@angular/core';
+import { ScrollLock } from '@shared/scroll-lock';
 import { FormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, filter, map, Subject, switchMap } from 'rxjs';
 import { LibrariesApi } from '@features/libraries/data-access/libraries-api';
@@ -12,7 +13,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 @Component({
     selector: 'app-identify-modal',
-    imports: [FormsModule],
+    imports: [ ScrollLock,FormsModule],
     templateUrl: './identify-modal.html',
     styleUrl: './identify-modal.css',
 })

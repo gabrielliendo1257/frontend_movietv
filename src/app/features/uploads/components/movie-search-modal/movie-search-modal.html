@@ -1,4 +1,4 @@
-<div class="modal-backdrop" [class.open]="isOpen()" (click)="onBackdropClick($event)">
+<div class="modal-backdrop" [class.open]="isOpen()" [appScrollLock]="isOpen()" (click)="onBackdropClick($event)">
     <div class="modal" [class.open]="isOpen()">
         <div class="modal-header">
             <h2 class="modal-title">Search Movie</h2>

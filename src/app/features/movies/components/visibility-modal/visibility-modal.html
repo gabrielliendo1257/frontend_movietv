@@ -1,4 +1,4 @@
-<div class="modal-backdrop" [class.open]="isOpen()" (click)="close()">
+<div class="modal-backdrop" [class.open]="isOpen()" [appScrollLock]="isOpen()" (click)="close()">
     <div class="modal" [class.open]="isOpen()" (click)="$event.stopPropagation()">
         <div class="modal-header">
             <h2 class="modal-title">Visibilidad</h2>

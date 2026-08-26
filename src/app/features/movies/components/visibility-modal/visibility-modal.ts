@@ -1,4 +1,5 @@
 import { Component, inject, input, output, signal } from '@angular/core';
+import { ScrollLock } from '@shared/scroll-lock';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ToastService } from '@core/ui/toast.service';
 import { CatalogApi } from '@features/catalog/data-access/catalog-api';
@@ -19,7 +20,7 @@ const VISIBILITY_OPTIONS: { value: MovieVisibility; label: string }[] = [
  */
 @Component({
     selector: 'app-visibility-modal',
-    imports: [JobProgress],
+    imports: [ ScrollLock,JobProgress],
     templateUrl: './visibility-modal.html',
     styleUrl: './visibility-modal.css',
 })
