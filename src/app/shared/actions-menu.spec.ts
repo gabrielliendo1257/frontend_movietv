@@ -10,14 +10,18 @@ describe('ActionsMenu', () => {
         }).compileComponents();
     });
 
-    function createWithContent() {
+    function createWithItems() {
         const fixture = TestBed.createComponent(ActionsMenu);
         fixture.componentRef.setInput('label', 'Acciones de prueba');
-        return { fixture, element: fixture.nativeElement as HTMLElement };
+        fixture.componentRef.setInput('items', [
+            { label: 'Editar', action: () => undefined },
+            { label: 'Eliminar', action: () => undefined, danger: true },
+        ]);
+        return { fixture };
     }
 
-    it('al abrirse renderiza el menú fijo con el contenido proyectado', async () => {
-        const { fixture } = createWithContent();
+    it('al abrirse renderiza el menú fijo con las acciones y sus estilos', async () => {
+        const { fixture } = createWithItems();
         const details = fixture.nativeElement.querySelector('details');
 
         details.open = true;
@@ -31,11 +35,41 @@ describe('ActionsMenu', () => {
         expect(menu).withContext('el menú debe existir').toBeTruthy();
         expect(menu.classes['fixed']).toBeTrue();
         expect(menu.styles['top']).toContain('px');
-        expect(fixture.componentInstance.label()).toBe('Acciones de prueba');
+
+        const buttons = fixture.debugElement.queryAll(By.css('.item-btn'));
+        expect(buttons.length).toBe(2);
+        expect(buttons[0].nativeElement.textContent).toContain('Editar');
+        expect(buttons[1].classes['danger']).toBeTrue();
+
+        // estilos visibles: color de texto del tema (no el negro de botón UA)
+        const styles = getComputedStyle(buttons[0].nativeElement);
+        expect(styles.color).toBe('rgb(228, 228, 236)');
+        expect(styles.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    });
+
+    it('ejecuta la acción y cierra el menú', () => {
+        const { fixture } = createWithItems();
+        const details = fixture.nativeElement.querySelector('details');
+
+        details.open = true;
+        details.dispatchEvent(new Event('toggle'));
+        fixture.detectChanges();
+
+        let executed = '';
+        fixture.componentRef.setInput('items', [
+            { label: 'Editar', action: () => (executed = 'edit') },
+        ]);
+        fixture.detectChanges();
+
+        fixture.debugElement.query(By.css('.item-btn')).nativeElement.click();
+        fixture.detectChanges();
+
+        expect(executed).toBe('edit');
+        expect(details.open).toBeFalse();
     });
 
     it('cierra con Escape', () => {
-        const { fixture } = createWithContent();
+        const { fixture } = createWithItems();
         const details = fixture.nativeElement.querySelector('details');
 
         details.open = true;
@@ -50,7 +84,7 @@ describe('ActionsMenu', () => {
     });
 
     it('cierra al hacer click fuera', () => {
-        const { fixture } = createWithContent();
+        const { fixture } = createWithItems();
         const details = fixture.nativeElement.querySelector('details');
 
         details.open = true;

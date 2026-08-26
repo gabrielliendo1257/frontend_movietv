@@ -293,16 +293,6 @@
     vertical-align: middle;
 }
 
-/* --- Item peligroso del menú --- */
-.menu button.menu-danger {
-    color: var(--color-danger);
-}
-
-.menu button.menu-danger:hover {
-    background: color-mix(in srgb, var(--color-danger) 14%, transparent);
-    color: var(--color-danger);
-}
-
 /* --- Estado de error --- */
 .error-box {
     display: flex;

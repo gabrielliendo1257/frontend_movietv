@@ -152,10 +152,7 @@
                                                     Identificar
                                                 </button>
                                             } @else {
-                                                <app-actions-menu label="Más acciones">
-                                                    <button (click)="goToDetails(asset)">Ver detalles</button>
-                                                    <button (click)="openRowVisibility(asset)">Cambiar estado</button>
-                                                </app-actions-menu>
+                                                <app-actions-menu label="Más acciones" [items]="assetActions(asset)" />
                                             }
                                         </td>
                                     </tr>

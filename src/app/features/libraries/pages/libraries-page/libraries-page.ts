@@ -10,7 +10,7 @@ import { VisibilityModal } from '@features/movies/components/visibility-modal/vi
 import { CatalogJob } from '@features/catalog/models/catalog';
 import { IdentifyModal } from '@features/libraries/components/identify-modal/identify-modal';
 import { BytesPipe } from '@shared/pipes/bytes.pipe';
-import { ActionsMenu } from '@shared/actions-menu';
+import { ActionsMenu, ActionsMenuItem } from '@shared/actions-menu';
 
 const PAGE_SIZE = 20;
 
@@ -226,6 +226,13 @@ export class LibrariesPage {
             label: `Biblioteca #${library.id} (todas sus películas)`,
             libraryIds: [library.id],
         });
+    }
+
+    assetActions(asset: MediaAsset): ActionsMenuItem[] {
+        return [
+            { label: 'Ver detalles', action: () => this.goToDetails(asset) },
+            { label: 'Cambiar estado', action: () => this.openRowVisibility(asset) },
+        ];
     }
 
     openRowVisibility(asset: MediaAsset): void {

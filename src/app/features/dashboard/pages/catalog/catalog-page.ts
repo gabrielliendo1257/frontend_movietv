@@ -5,7 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EnrichmentApi } from '@features/movies/data-access/enrichment-api';
 import { MovieVisibility } from '@features/movies/models/web-movie';
 import { MediaAsset } from '@features/libraries/models/library';
-import { ActionsMenu } from '@shared/actions-menu';
+import { ActionsMenu, ActionsMenuItem } from '@shared/actions-menu';
 import { ConfirmDialog } from '@shared/confirm-dialog';
 import { VisibilityModal } from '@features/movies/components/visibility-modal/visibility-modal';
 import { IdentifyModal } from '@features/libraries/components/identify-modal/identify-modal';
@@ -87,6 +87,29 @@ export class CatalogPage {
             || caps.changeVisibility || caps.unlinkProvider
             || caps.identify || caps.delete;
     };
+
+    /** Acciones de fila según capabilities del BFF; el menú las pinta. */
+    actionsFor(item: CatalogItem): ActionsMenuItem[] {
+        const caps = item.capabilities;
+        const actions: ActionsMenuItem[] = [];
+        if (caps.play) actions.push({ label: 'Reproducir', action: () => this.play(item) });
+        if (caps.viewDetail || caps.editMetadata) {
+            actions.push({ label: 'Editar', action: () => this.edit(item) });
+        }
+        if (caps.changeVisibility) {
+            actions.push({ label: 'Cambiar estado', action: () => this.openRowVisibility(item) });
+        }
+        if (caps.identify) {
+            actions.push({ label: 'Identificar', action: () => this.openIdentify(item) });
+        }
+        if (caps.unlinkProvider) {
+            actions.push({ label: 'Desvincular proveedor', action: () => this.unlinkProvider(item) });
+        }
+        if (caps.delete) {
+            actions.push({ label: 'Eliminar', action: () => this.requestDelete(item), danger: true });
+        }
+        return actions;
+    }
 
     readonly mediaIdOf = (item: CatalogItem): number => item.mediaId ?? item.key.id;
 

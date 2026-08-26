@@ -5,6 +5,13 @@ interface MenuPosition {
     left: number;
 }
 
+/** Acción del menú; el componente la pinta con su propio estilo. */
+export interface ActionsMenuItem {
+    label: string;
+    action: () => void;
+    danger?: boolean;
+}
+
 /**
  * Menú de acciones para contextos con recorte (tablas dentro de
  * contenedores con overflow-x). El panel se posiciona contra el viewport
@@ -12,7 +19,9 @@ interface MenuPosition {
  * arriba cuando no hay espacio debajo — así nunca queda detrás del borde
  * del contenedor ni fuera de pantalla en la última fila.
  *
- * El contenido (botones) se proyecta: conservan los estilos de la página.
+ * Las acciones llegan como datos (no como contenido proyectado): así los
+ * botones conservan el estilo del propio componente sin depender del CSS
+ * de cada página (la proyección perdía los estilos por la encapsulación).
  */
 @Component({
     selector: 'app-actions-menu',
@@ -35,7 +44,15 @@ interface MenuPosition {
                     [style.top.px]="pos()?.top"
                     [style.left.px]="pos()?.left"
                 >
-                    <ng-content />
+                    @for (item of items(); track item.label) {
+                        <button
+                            class="item-btn"
+                            [class.danger]="item.danger"
+                            type="button"
+                            role="menuitem"
+                            (click)="run(item)"
+                        >{{ item.label }}</button>
+                    }
                 </div>
             }
         </details>
@@ -100,11 +117,41 @@ interface MenuPosition {
         .menu.fixed.ready {
             visibility: visible;
         }
+
+        .item-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            color: var(--color-text);
+            padding: 0.5rem 0.65rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .item-btn:hover {
+            background: rgba(255, 61, 0, 0.12);
+            color: var(--color-heading);
+        }
+
+        .item-btn.danger {
+            color: var(--color-danger);
+        }
+
+        .item-btn.danger:hover {
+            background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+            color: var(--color-danger);
+        }
     `,
 })
 export class ActionsMenu implements OnDestroy {
     /** Texto accesible/título del trigger. */
     readonly label = input('Más acciones');
+
+    /** Acciones a mostrar; el componente cierra el menú tras ejecutar. */
+    readonly items = input<ActionsMenuItem[]>([]);
 
     private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
     protected readonly open = signal(false);
@@ -124,6 +171,11 @@ export class ActionsMenu implements OnDestroy {
         if (details) details.open = false;
         this.open.set(false);
         this.pos.set(null);
+    }
+
+    run(item: ActionsMenuItem): void {
+        this.close();
+        item.action();
     }
 
     onToggle(details: HTMLDetailsElement): void {

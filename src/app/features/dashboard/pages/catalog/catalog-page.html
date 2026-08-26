@@ -124,26 +124,10 @@
                             <td class="col-source"><span class="source">{{ item.source ?? '—' }}</span></td>
                             <td class="col-actions">
                                 @if (hasMenu(item)) {
-                                    <app-actions-menu label="Acciones de {{ item.title || 'Untitled' }}">
-                                        @if (item.capabilities.play) {
-                                            <button (click)="play(item)">Reproducir</button>
-                                        }
-                                        @if (item.capabilities.viewDetail || item.capabilities.editMetadata) {
-                                            <button (click)="edit(item)">Editar</button>
-                                        }
-                                        @if (item.capabilities.changeVisibility) {
-                                            <button (click)="openRowVisibility(item)">Cambiar estado</button>
-                                        }
-                                        @if (item.capabilities.identify) {
-                                            <button (click)="openIdentify(item)">Identificar</button>
-                                        }
-                                        @if (item.capabilities.unlinkProvider) {
-                                            <button (click)="unlinkProvider(item)">Desvincular proveedor</button>
-                                        }
-                                        @if (item.capabilities.delete) {
-                                            <button class="menu-danger" (click)="requestDelete(item)">Eliminar</button>
-                                        }
-                                    </app-actions-menu>
+                                    <app-actions-menu
+                                        [label]="'Acciones de ' + (item.title || 'Untitled')"
+                                        [items]="actionsFor(item)"
+                                    />
                                 }
                             </td>
                         </tr>
