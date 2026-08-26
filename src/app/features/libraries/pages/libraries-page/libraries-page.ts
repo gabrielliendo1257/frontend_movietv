@@ -7,7 +7,7 @@ import { LibrariesApi } from '@features/libraries/data-access/libraries-api';
 import { Library, MediaAsset } from '@features/libraries/models/library';
 import { MovieVisibility } from '@features/movies/models/web-movie';
 import { VisibilityModal } from '@features/movies/components/visibility-modal/visibility-modal';
-import { VisibilityJob } from '@features/movies/models/visibility';
+import { CatalogJob } from '@features/catalog/models/catalog';
 import { IdentifyModal } from '@features/libraries/components/identify-modal/identify-modal';
 import { BytesPipe } from '@shared/pipes/bytes.pipe';
 import { ActionsMenu } from '@shared/actions-menu';
@@ -247,7 +247,7 @@ export class LibrariesPage {
         this.visibilityTarget.set(null);
     }
 
-    onVisibilityDone(_job: VisibilityJob): void {
+    onVisibilityDone(_job: CatalogJob): void {
         this.visibilityTarget.set(null);
         this.selectedAssetIds.set([]);
         this.loadLibraries();

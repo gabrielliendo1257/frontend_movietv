@@ -6,32 +6,54 @@
                 class="search-input"
                 type="text"
                 placeholder="Search media..."
-                [ngModel]="query()"
-                (ngModelChange)="query.set($event)"
+                [ngModel]="store.query()"
+                (ngModelChange)="store.setQuery($event)"
             />
             <details class="dropdown">
                 <summary class="btn">Filters ▾</summary>
                 <div class="menu">
                     <span class="menu-label">Status</span>
-                    <button (click)="statusFilter.set('ALL')" [class.menu-active]="statusFilter() === 'ALL'">Todos</button>
-                    <button (click)="statusFilter.set('READY')" [class.menu-active]="statusFilter() === 'READY'">READY</button>
-                    <button (click)="statusFilter.set('DRAFT')" [class.menu-active]="statusFilter() === 'DRAFT'">DRAFT</button>
-                    <span class="menu-label">Kind</span>
-                    <button (click)="kindFilter.set('ALL')" [class.menu-active]="kindFilter() === 'ALL'">Todos</button>
-                    <button (click)="kindFilter.set('MOVIE')" [class.menu-active]="kindFilter() === 'MOVIE'">MOVIE</button>
-                    <button (click)="kindFilter.set('OTHER')" [class.menu-active]="kindFilter() === 'OTHER'">OTHER</button>
-                    <span class="menu-label">Source</span>
-                    <button (click)="sourceFilter.set('ALL')" [class.menu-active]="sourceFilter() === 'ALL'">Todas</button>
-                    <button (click)="sourceFilter.set('LOCAL')" [class.menu-active]="sourceFilter() === 'LOCAL'">LOCAL</button>
-                    <button (click)="sourceFilter.set('S3')" [class.menu-active]="sourceFilter() === 'S3'">S3</button>
+                    @for (option of statusOptions; track option.value) {
+                        <button
+                            (click)="store.setStatus(option.value)"
+                            [class.menu-active]="store.statusFilter() === option.value"
+                        >{{ option.label }}</button>
+                    }
+                </div>
+            </details>
+            <details class="dropdown">
+                <summary class="btn">Orden ▾</summary>
+                <div class="menu">
+                    <span class="menu-label">Ordenar por</span>
+                    @for (option of sortOptions; track option.value) {
+                        <button
+                            (click)="toggleSort(option.value)"
+                            [class.menu-active]="store.sort() === option.value"
+                        >
+                            {{ option.label }}
+                            @if (store.sort() === option.value) {
+                                {{ store.dir() === 'asc' ? '↑' : '↓' }}
+                            }
+                        </button>
+                    }
                 </div>
             </details>
         </div>
     </div>
 
-    @if (selectedCount()) {
+    <div class="summary-row">
+        <span class="summary-chip">{{ store.summary().total }} total</span>
+        <span class="summary-chip ok">{{ store.summary().ready }} listas</span>
+        @if (store.summary().needsAttention) {
+            <span class="summary-chip warn">{{ store.summary().needsAttention }} requieren atención</span>
+        }
+    </div>
+
+    @if (store.hasSelection()) {
         <div class="bulk-toolbar">
-            <span class="bulk-count">{{ selectedCount() }} seleccionada{{ selectedCount() === 1 ? '' : 's' }}</span>
+            <span class="bulk-count">
+                {{ store.selectedCount() }} seleccionada{{ store.selectedCount() === 1 ? '' : 's' }}
+            </span>
             <div class="bulk-actions">
                 <details class="dropdown">
                     <summary class="btn">Cambiar estado ▾</summary>
@@ -41,56 +63,119 @@
                         <button (click)="openBulkVisibility('PRIVATE')">Privado</button>
                     </div>
                 </details>
+                <button class="btn" type="button" (click)="store.clearSelection()">Limpiar</button>
             </div>
         </div>
     }
 
-    <div class="table-wrap">
-        <table class="catalog-table">
-            <thead>
-                <tr>
-                    <th class="col-select">
-                        <input
-                            class="check"
-                            type="checkbox"
-                            [checked]="allSelected()"
-                            [indeterminate]="someSelected() && !allSelected()"
-                            (change)="toggleSelectAll()"
-                        />
-                    </th>
-                    <th>Title</th>
-                    <th class="col-kind">Kind</th>
-                    <th class="col-status">Status</th>
-                    <th class="col-source">Source</th>
-                    <th class="col-actions">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (movie of filtered(); track movie.id) {
-                    <tr [class.selected]="isSelected(movie)">
-                        <td class="col-select">
-                            <input class="check" type="checkbox" [checked]="isSelected(movie)" (change)="toggle(movie)" />
-                        </td>
-                        <td class="col-title">{{ movie.title || 'Untitled' }}</td>
-                        <td class="col-kind"><span class="kind">{{ kindOf(movie) }}</span></td>
-                        <td class="col-status"><span class="status" [class.ok]="movie.status === 'READY'">{{ movie.status }}</span></td>
-                        <td class="col-source"><span class="source">{{ sourceOf(movie) }}</span></td>
-                        <td class="col-actions">
-                            <app-actions-menu label="Acciones de {{ movie.title || 'Untitled' }}">
-                                <button (click)="editMovie(movie)">Editar</button>
-                                <button (click)="openRowVisibility(movie)">Cambiar estado</button>
-                                <button (click)="unlinkProvider(movie)">Desvincular proveedor</button>
-                            </app-actions-menu>
-                        </td>
-                    </tr>
-                } @empty {
+    @if (store.loading()) {
+        <p class="muted">Cargando catálogo...</p>
+    } @else if (store.error()) {
+        <div class="error-box">
+            <p class="muted">No se pudo cargar el catálogo.</p>
+            <button class="btn" type="button" (click)="store.refresh()">Reintentar</button>
+        </div>
+    } @else {
+        <div class="table-wrap">
+            <table class="catalog-table">
+                <thead>
                     <tr>
-                        <td colspan="6" class="empty-cell">No media found.</td>
+                        <th class="col-select">
+                            <input
+                                class="check"
+                                type="checkbox"
+                                [checked]="store.allSelected()"
+                                [indeterminate]="store.someSelected() && !store.allSelected()"
+                                (change)="store.toggleSelectAll()"
+                            />
+                        </th>
+                        <th>Title</th>
+                        <th class="col-kind">Kind</th>
+                        <th class="col-status">Status</th>
+                        <th class="col-source">Source</th>
+                        <th class="col-actions">Actions</th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @for (item of store.items(); track trackBy($index, item)) {
+                        <tr [class.selected]="store.isSelected(item)">
+                            <td class="col-select">
+                                @if (item.capabilities.changeVisibility) {
+                                    <input
+                                        class="check"
+                                        type="checkbox"
+                                        [checked]="store.isSelected(item)"
+                                        (change)="store.toggle(item)"
+                                    />
+                                }
+                            </td>
+                            <td class="col-title">
+                                {{ item.title || 'Untitled' }}
+                                @if (item.key.type === 'ASSET') {
+                                    <span class="asset-tag">asset</span>
+                                }
+                            </td>
+                            <td class="col-kind"><span class="kind">{{ item.kind }}</span></td>
+                            <td class="col-status">
+                                <span class="status" [class.ok]="isReady(item)">
+                                    {{ displayStatusOf(item) }}
+                                </span>
+                            </td>
+                            <td class="col-source"><span class="source">{{ item.source ?? '—' }}</span></td>
+                            <td class="col-actions">
+                                @if (hasMenu(item)) {
+                                    <app-actions-menu label="Acciones de {{ item.title || 'Untitled' }}">
+                                        @if (item.capabilities.play) {
+                                            <button (click)="play(item)">Reproducir</button>
+                                        }
+                                        @if (item.capabilities.viewDetail || item.capabilities.editMetadata) {
+                                            <button (click)="edit(item)">Editar</button>
+                                        }
+                                        @if (item.capabilities.changeVisibility) {
+                                            <button (click)="openRowVisibility(item)">Cambiar estado</button>
+                                        }
+                                        @if (item.capabilities.identify) {
+                                            <button (click)="openIdentify(item)">Identificar</button>
+                                        }
+                                        @if (item.capabilities.unlinkProvider) {
+                                            <button (click)="unlinkProvider(item)">Desvincular proveedor</button>
+                                        }
+                                        @if (item.capabilities.delete) {
+                                            <button class="menu-danger" (click)="requestDelete(item)">Eliminar</button>
+                                        }
+                                    </app-actions-menu>
+                                }
+                            </td>
+                        </tr>
+                    } @empty {
+                        <tr>
+                            <td colspan="6" class="empty-cell">No media found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (store.totalPages() > 1) {
+            <div class="pagination">
+                <button
+                    class="btn"
+                    type="button"
+                    [disabled]="store.page() === 0"
+                    (click)="store.goTo(store.page() - 1)"
+                >‹ Anterior</button>
+                <span class="pagination-info">
+                    Página {{ store.page() + 1 }} de {{ store.totalPages() }} · {{ store.total() }} media
+                </span>
+                <button
+                    class="btn"
+                    type="button"
+                    [disabled]="store.page() >= store.totalPages() - 1"
+                    (click)="store.goTo(store.page() + 1)"
+                >Siguiente ›</button>
+            </div>
+        }
+    }
 
     @if (visibilityTarget(); as target) {
         <app-visibility-modal
@@ -99,6 +184,23 @@
             [initialVisibility]="target.initialVisibility"
             (closed)="onVisibilityClosed()"
             (done)="onVisibilityDone($event)"
+        />
+    }
+
+    <app-identify-modal
+        [(isOpen)]="identifyOpen"
+        [asset]="identifyTarget()"
+        (identified)="onIdentified()"
+    />
+
+    @if (deleteTarget(); as target) {
+        <app-confirm-dialog
+            [(open)]="confirmOpen"
+            title="Eliminar media"
+            [message]="'«' + target.title + '» se eliminará de tu catálogo. Esta acción no se puede deshacer.'"
+            confirmLabel="Eliminar"
+            (confirmed)="confirmDelete()"
+            (cancelled)="cancelDelete()"
         />
     }
 </section>

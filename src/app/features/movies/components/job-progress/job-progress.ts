@@ -1,5 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import { VisibilityJob } from '@features/movies/models/visibility';
+import { CatalogJob } from '@features/catalog/models/catalog';
 
 /** Barra de progreso reutilizable para trabajos con avance (done/total/failed). */
 @Component({
@@ -9,7 +9,7 @@ import { VisibilityJob } from '@features/movies/models/visibility';
     styleUrl: './job-progress.css',
 })
 export class JobProgress {
-    readonly job = input.required<VisibilityJob>();
+    readonly job = input.required<CatalogJob>();
 
     readonly percent = computed(() => {
         const job = this.job();

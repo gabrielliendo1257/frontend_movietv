@@ -1,8 +1,8 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ToastService } from '@core/ui/toast.service';
-import { VisibilityApi } from '@features/movies/data-access/visibility-api';
-import { VisibilityJob } from '@features/movies/models/visibility';
+import { CatalogApi } from '@features/catalog/data-access/catalog-api';
+import { CatalogJob } from '@features/catalog/models/catalog';
 import { MovieVisibility } from '@features/movies/models/web-movie';
 import { JobProgress } from '@features/movies/components/job-progress/job-progress';
 
@@ -12,6 +12,11 @@ const VISIBILITY_OPTIONS: { value: MovieVisibility; label: string }[] = [
     { value: 'SHARED', label: 'Compartido' },
 ];
 
+/**
+ * Cambio de acceso de la experiencia Catalog:
+ * - una sola media → PUT /web/media/{id}/access (atómico, sin job)
+ * - selección masiva → POST /web/catalog/actions/change-visibility (202 + SSE)
+ */
 @Component({
     selector: 'app-visibility-modal',
     imports: [JobProgress],
@@ -19,7 +24,7 @@ const VISIBILITY_OPTIONS: { value: MovieVisibility; label: string }[] = [
     styleUrl: './visibility-modal.css',
 })
 export class VisibilityModal {
-    private readonly visibilityApi = inject(VisibilityApi);
+    private readonly catalogApi = inject(CatalogApi);
     private readonly toast = inject(ToastService);
 
     readonly label = input.required<string>();
@@ -28,7 +33,7 @@ export class VisibilityModal {
     readonly initialVisibility = input<MovieVisibility>('PRIVATE');
 
     readonly closed = output<void>();
-    readonly done = output<VisibilityJob>();
+    readonly done = output<CatalogJob>();
 
     readonly options = VISIBILITY_OPTIONS;
     readonly isOpen = signal(false);
@@ -36,7 +41,7 @@ export class VisibilityModal {
     readonly usernames = signal<string[]>([]);
     readonly newUsername = signal('');
     readonly phase = signal<'form' | 'running'>('form');
-    readonly job = signal<VisibilityJob | null>(null);
+    readonly job = signal<CatalogJob | null>(null);
     readonly submitting = signal(false);
     readonly error = signal<string | null>(null);
 
@@ -79,31 +84,56 @@ export class VisibilityModal {
         this.submitting.set(true);
         this.error.set(null);
 
-        const request = {
-            movieIds: this.movieIds().length ? this.movieIds() : undefined,
-            libraryIds: this.libraryIds().length ? this.libraryIds() : undefined,
-            visibility: this.visibility(),
-            usernames: this.usernames().length ? this.usernames() : undefined,
-        };
+        const movieIds = this.movieIds();
+        const libraryIds = this.libraryIds();
 
-        this.visibilityApi.bulk(request).subscribe({
-            next: (job) => this.track(job),
-            error: (error: unknown) => this.handleError(error),
-        });
+        // Una sola media: acceso atómico directo, sin trabajo en background.
+        if (movieIds.length === 1 && libraryIds.length === 0) {
+            this.catalogApi
+                .changeAccess(movieIds[0], this.visibility(), this.usernames())
+                .subscribe({
+                    next: () => this.finishSingle(movieIds[0]),
+                    error: (error: unknown) => this.handleError(error),
+                });
+            return;
+        }
+
+        this.catalogApi
+            .changeVisibilityBulk({
+                movieIds: movieIds.length ? movieIds : undefined,
+                libraryIds: libraryIds.length ? libraryIds : undefined,
+                visibility: this.visibility(),
+                sharedWith: this.usernames().length ? this.usernames() : undefined,
+            })
+            .subscribe({
+                next: (job) => this.track(job),
+                error: (error: unknown) => this.handleError(error),
+            });
     }
 
-    private track(initial: VisibilityJob): void {
+    private finishSingle(_mediaId: number): void {
+        this.toast.success('Visibilidad actualizada.');
+        this.submitting.set(false);
+        this.done.emit({ jobId: '', status: 'COMPLETED', total: 1, done: 1, failed: 0 });
+        this.close();
+    }
+
+    private track(initial: CatalogJob): void {
         this.phase.set('running');
         this.job.set(initial);
-        this.visibilityApi.jobEvents(initial.jobId).subscribe({
+        this.catalogApi.jobEvents(initial.jobId).subscribe({
             next: (job) => {
                 this.job.set(job);
-                if (job.status === 'DONE') {
+                if (job.status === 'COMPLETED' || job.status === 'FAILED') {
                     const message =
                         job.failed > 0
                             ? `${job.done} actualizadas, ${job.failed} fallidas`
-                            : `${job.done} películas actualizadas`;
-                    this.toast.success(message);
+                            : `${job.done} actualizadas`;
+                    if (job.status === 'FAILED') {
+                        this.toast.error(`La acción terminó con errores: ${message}`);
+                    } else {
+                        this.toast.success(message);
+                    }
                     this.submitting.set(false);
                     this.done.emit(job);
                     this.close();
@@ -118,16 +148,10 @@ export class VisibilityModal {
 
     private handleError(error: unknown): void {
         this.submitting.set(false);
-        if (error instanceof HttpErrorResponse) {
-            if (error.status === 403) {
-                this.error.set('Solo el dueño puede cambiar la visibilidad');
-                return;
-            }
-            if (error.status === 400) {
-                this.error.set('Para compartir hay que indicar los usuarios');
-                return;
-            }
+        if (error instanceof HttpErrorResponse && error.status === 401) {
+            this.error.set('Tu sesión expiró; inicia sesión de nuevo.');
+            return;
         }
-        this.error.set('No se pudo aplicar la visibilidad');
+        this.error.set('No se pudo cambiar la visibilidad. Intenta de nuevo.');
     }
 }

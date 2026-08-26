@@ -2,103 +2,126 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MoviesApi } from '@features/movies/data-access/movies-api';
 import { EnrichmentApi } from '@features/movies/data-access/enrichment-api';
-import { WebMovie } from '@features/movies/models/web-movie';
 import { MovieVisibility } from '@features/movies/models/web-movie';
+import { MediaAsset } from '@features/libraries/models/library';
 import { ActionsMenu } from '@shared/actions-menu';
+import { ConfirmDialog } from '@shared/confirm-dialog';
 import { VisibilityModal } from '@features/movies/components/visibility-modal/visibility-modal';
-import { VisibilityJob } from '@features/movies/models/visibility';
+import { IdentifyModal } from '@features/libraries/components/identify-modal/identify-modal';
+import { CatalogApi } from '@features/catalog/data-access/catalog-api';
+import { CatalogStore } from '@features/catalog/data-access/catalog-store';
+import {
+    CatalogItem,
+    CatalogJob,
+    CatalogSortKey,
+    CatalogStatusFilter,
+} from '@features/catalog/models/catalog';
 import { ToastService } from '@core/ui/toast.service';
 
-type StatusFilter = 'ALL' | 'DRAFT' | 'READY';
-type SourceFilter = 'ALL' | 'LOCAL' | 'S3';
-type KindFilter = 'ALL' | 'MOVIE' | 'OTHER';
+const STATUS_OPTIONS: { value: CatalogStatusFilter; label: string }[] = [
+    { value: 'ALL', label: 'Todos' },
+    { value: 'READY', label: 'READY' },
+    { value: 'PROCESSING', label: 'PROCESSING' },
+    { value: 'ATTENTION', label: 'ATTENTION' },
+    { value: 'UNIDENTIFIED', label: 'UNIDENTIFIED' },
+    { value: 'MISSING', label: 'MISSING' },
+];
 
+const SORT_OPTIONS: { value: CatalogSortKey; label: string }[] = [
+    { value: 'updated', label: 'Más recientes' },
+    { value: 'title', label: 'Título' },
+    { value: 'year', label: 'Año' },
+];
+
+/**
+ * Grilla de administración del contenido propio: consume la experiencia
+ * Catalog del BFF (paginación server-side, filas MEDIA + ASSET y acciones
+ * guiadas por capabilities). La selección alimenta la acción masiva.
+ */
 @Component({
     selector: 'app-catalog-page',
-    imports: [ActionsMenu, FormsModule, VisibilityModal],
+    imports: [
+        ActionsMenu,
+        ConfirmDialog,
+        FormsModule,
+        VisibilityModal,
+        IdentifyModal,
+    ],
     templateUrl: './catalog-page.html',
     styleUrl: './catalog-page.css',
 })
 export class CatalogPage {
-    private readonly moviesApi = inject(MoviesApi);
+    readonly store = inject(CatalogStore);
+
+    private readonly catalogApi = inject(CatalogApi);
     private readonly enrichmentApi = inject(EnrichmentApi);
     private readonly toast = inject(ToastService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 
-    readonly movies = signal<WebMovie[]>([]);
-    readonly query = signal('');
-    readonly statusFilter = signal<StatusFilter>('ALL');
-    readonly sourceFilter = signal<SourceFilter>('ALL');
-    readonly kindFilter = signal<KindFilter>('ALL');
-    readonly selectedIds = signal<number[]>([]);
-    readonly visibilityTarget = signal<{ label: string; movieIds: number[]; initialVisibility: MovieVisibility } | null>(null);
+    readonly statusOptions = STATUS_OPTIONS;
+    readonly sortOptions = SORT_OPTIONS;
 
-    readonly kindOf = (movie: WebMovie): string => movie.kind ?? 'MOVIE';
+    readonly visibilityTarget = signal<{
+        label: string;
+        movieIds: number[];
+        initialVisibility: MovieVisibility;
+    } | null>(null);
 
-    readonly sourceOf = (movie: WebMovie): string => (movie.objectId != null ? 'S3' : 'LOCAL');
+    /** ASSET a identificar desde la grilla (reutiliza el modal de libraries). */
+    readonly identifyTarget = signal<MediaAsset | null>(null);
+    readonly identifyOpen = signal(false);
 
-    readonly filtered = computed(() => {
-        const q = this.query().trim().toLowerCase();
-        const status = this.statusFilter();
-        const source = this.sourceFilter();
-        const kind = this.kindFilter();
-        return this.movies().filter((movie) => {
-            if (q && !movie.title.toLowerCase().includes(q)) return false;
-            if (status !== 'ALL' && movie.status !== status) return false;
-            if (source !== 'ALL' && this.sourceOf(movie) !== source) return false;
-            if (kind !== 'ALL' && this.kindOf(movie) !== kind) return false;
-            return true;
-        });
-    });
+    /** Media candidata a borrado + visibilidad del diálogo. */
+    readonly deleteTarget = signal<CatalogItem | null>(null);
+    readonly confirmOpen = signal(false);
 
-    readonly selectedCount = computed(() => this.selectedIds().length);
+    readonly displayStatusOf = (item: CatalogItem): string => item.displayStatus ?? item.status;
 
-    readonly allSelected = computed(
-        () =>
-            this.filtered().length > 0 &&
-            this.filtered().every((movie) => this.selectedIds().includes(movie.id)),
-    );
+    readonly isReady = (item: CatalogItem): boolean => this.displayStatusOf(item) === 'READY';
 
-    readonly someSelected = computed(() =>
-        this.filtered().some((movie) => this.selectedIds().includes(movie.id)),
-    );
+    readonly hasMenu = (item: CatalogItem): boolean => {
+        const caps = item.capabilities;
+        return caps.play || caps.viewDetail || caps.editMetadata
+            || caps.changeVisibility || caps.unlinkProvider
+            || caps.identify || caps.delete;
+    };
+
+    readonly mediaIdOf = (item: CatalogItem): number => item.mediaId ?? item.key.id;
 
     constructor() {
-        this.moviesApi.list().subscribe({
-            next: (movies) => this.movies.set(movies),
-            error: () => undefined,
-        });
+        this.store.load(0);
 
         // La búsqueda global del shell aterriza aquí: /catalog?q=…
         this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
             const query = params.get('q');
-            if (query !== null) this.query.set(query);
+            if (query !== null) this.store.setQuery(query);
         });
     }
 
-    toggle(movie: WebMovie): void {
-        const current = this.selectedIds();
-        this.selectedIds.set(
-            current.includes(movie.id) ? current.filter((id) => id !== movie.id) : [...current, movie.id],
-        );
+    trackBy(_index: number, item: CatalogItem): string {
+        return `${item.key.type}:${item.key.id}`;
     }
 
-    toggleSelectAll(): void {
-        this.selectedIds.set(
-            this.allSelected() ? [] : this.filtered().map((movie) => movie.id),
-        );
+    play(item: CatalogItem): void {
+        this.router.navigate(['/watch', this.mediaIdOf(item)]);
     }
 
-    isSelected(movie: WebMovie): boolean {
-        return this.selectedIds().includes(movie.id);
+    edit(item: CatalogItem): void {
+        this.router.navigate(['/catalog', this.mediaIdOf(item), 'edit']);
+    }
+
+    openRowVisibility(item: CatalogItem): void {
+        this.visibilityTarget.set({
+            label: item.title || 'Untitled',
+            movieIds: [this.mediaIdOf(item)],
+            initialVisibility: (item.visibility as MovieVisibility) ?? 'PRIVATE',
+        });
     }
 
     openBulkVisibility(visibility: MovieVisibility): void {
-        this.closeMenus();
-        const movieIds = this.selectedIds();
+        const movieIds = this.store.selectedMovieIds();
         if (!movieIds.length) return;
         this.visibilityTarget.set({
             label: `${movieIds.length} media seleccionada`,
@@ -107,51 +130,81 @@ export class CatalogPage {
         });
     }
 
-    openRowVisibility(movie: WebMovie): void {
-        this.closeMenus();
-        this.visibilityTarget.set({
-            label: movie.title,
-            movieIds: [movie.id],
-            initialVisibility: movie.visibility ?? 'PRIVATE',
+    openIdentify(item: CatalogItem): void {
+        if (item.assetId == null) return;
+        // Forma mínima de MediaAsset para el modal de identify (solo usa id y nombre).
+        this.identifyTarget.set({
+            id: item.assetId,
+            libraryId: 0,
+            relativePath: item.title,
+            size: 0,
+            mimeType: '',
+            status: 'UNIDENTIFIED',
+            movieId: null,
         });
+        this.identifyOpen.set(true);
     }
 
-    editMovie(movie: WebMovie): void {
-        this.closeMenus();
-        this.router.navigate(['/catalog', movie.id, 'edit']);
-    }
-
-    unlinkProvider(movie: WebMovie): void {
-        this.closeMenus();
-        this.enrichmentApi.unlink(movie.id).subscribe({
+    unlinkProvider(item: CatalogItem): void {
+        this.enrichmentApi.unlink(this.mediaIdOf(item)).subscribe({
             next: () => {
                 this.toast.success('Proveedor desvinculado.');
-                this.reload();
+                this.store.refresh();
             },
             error: () => this.toast.error('No se pudo desvincular el proveedor.'),
         });
     }
 
-    private reload(): void {
-        this.moviesApi.list().subscribe({
-            next: (movies) => this.movies.set(movies),
-            error: () => undefined,
+    requestDelete(item: CatalogItem): void {
+        this.deleteTarget.set(item);
+        this.confirmOpen.set(true);
+    }
+
+    confirmDelete(): void {
+        const item = this.deleteTarget();
+        if (!item) return;
+        this.catalogApi.delete(this.mediaIdOf(item)).subscribe({
+            next: () => {
+                this.toast.success(`«${item.title}» eliminada.`);
+                this.deleteTarget.set(null);
+                this.confirmOpen.set(false);
+                this.store.refresh();
+            },
+            error: () => {
+                this.toast.error('No se pudo eliminar la media.');
+                this.deleteTarget.set(null);
+                this.confirmOpen.set(false);
+            },
         });
+    }
+
+    toggleSort(key: CatalogSortKey): void {
+        if (this.store.sort() === key) {
+            this.store.setSort(key, this.store.dir() === 'asc' ? 'desc' : 'asc');
+            return;
+        }
+        this.store.setSort(key, 'asc');
+    }
+
+    cancelDelete(): void {
+        this.deleteTarget.set(null);
+        this.confirmOpen.set(false);
     }
 
     onVisibilityClosed(): void {
         this.visibilityTarget.set(null);
     }
 
-    onVisibilityDone(_job: VisibilityJob): void {
+    onVisibilityDone(_job: CatalogJob): void {
         this.visibilityTarget.set(null);
-        this.selectedIds.set([]);
-        this.reload();
+        this.store.clearSelection();
+        this.store.refresh();
     }
 
-    private closeMenus(): void {
-        document.querySelectorAll<HTMLDetailsElement>('details.dropdown[open]').forEach((d) => {
-            d.removeAttribute('open');
-        });
+    onIdentified(): void {
+        this.identifyOpen.set(false);
+        this.identifyTarget.set(null);
+        this.toast.success('Media identificada.');
+        this.store.refresh();
     }
 }
