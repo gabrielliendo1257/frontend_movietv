@@ -19,10 +19,10 @@ interface MenuPosition {
     template: `
         <details #details class="dropdown" (toggle)="onToggle(details)">
             <summary class="menu-trigger" [title]="label()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <circle cx="12" cy="5" r="1.9"/>
-                    <circle cx="12" cy="12" r="1.9"/>
-                    <circle cx="12" cy="19" r="1.9"/>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <circle cx="12" cy="4.5" r="2.4"/>
+                    <circle cx="12" cy="12" r="2.4"/>
+                    <circle cx="12" cy="19.5" r="2.4"/>
                 </svg>
                 <span class="sr-only">{{ label() }}</span>
             </summary>
