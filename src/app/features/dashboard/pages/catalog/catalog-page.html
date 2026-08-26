@@ -76,14 +76,11 @@
                         <td class="col-status"><span class="status" [class.ok]="movie.status === 'READY'">{{ movie.status }}</span></td>
                         <td class="col-source"><span class="source">{{ sourceOf(movie) }}</span></td>
                         <td class="col-actions">
-                            <details class="dropdown">
-                                <summary class="menu-trigger">⋮</summary>
-                                <div class="menu menu-right">
-                                    <button (click)="editMovie(movie)">Editar</button>
-                                    <button (click)="openRowVisibility(movie)">Cambiar estado</button>
-                                    <button (click)="unlinkProvider(movie)">Desvincular proveedor</button>
-                                </div>
-                            </details>
+                            <app-actions-menu label="Acciones de {{ movie.title || 'Untitled' }}">
+                                <button (click)="editMovie(movie)">Editar</button>
+                                <button (click)="openRowVisibility(movie)">Cambiar estado</button>
+                                <button (click)="unlinkProvider(movie)">Desvincular proveedor</button>
+                            </app-actions-menu>
                         </td>
                     </tr>
                 } @empty {

@@ -10,6 +10,7 @@ import { VisibilityModal } from '@features/movies/components/visibility-modal/vi
 import { VisibilityJob } from '@features/movies/models/visibility';
 import { IdentifyModal } from '@features/libraries/components/identify-modal/identify-modal';
 import { BytesPipe } from '@shared/pipes/bytes.pipe';
+import { ActionsMenu } from '@shared/actions-menu';
 
 const PAGE_SIZE = 20;
 
@@ -22,7 +23,7 @@ interface VisibilityTarget {
 
 @Component({
     selector: 'app-libraries-page',
-    imports: [FormsModule, VisibilityModal, IdentifyModal, BytesPipe],
+    imports: [ ActionsMenu,FormsModule, VisibilityModal, IdentifyModal, BytesPipe],
     templateUrl: './libraries-page.html',
     styleUrl: './libraries-page.css',
 })

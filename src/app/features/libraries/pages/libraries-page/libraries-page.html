@@ -152,13 +152,10 @@
                                                     Identificar
                                                 </button>
                                             } @else {
-                                                <details class="dropdown">
-                                                    <summary class="menu-trigger" title="Más acciones">⋮</summary>
-                                                    <div class="menu menu-right">
-                                                        <button (click)="goToDetails(asset)">Ver detalles</button>
-                                                        <button (click)="openRowVisibility(asset)">Cambiar estado</button>
-                                                    </div>
-                                                </details>
+                                                <app-actions-menu label="Más acciones">
+                                                    <button (click)="goToDetails(asset)">Ver detalles</button>
+                                                    <button (click)="openRowVisibility(asset)">Cambiar estado</button>
+                                                </app-actions-menu>
                                             }
                                         </td>
                                     </tr>

@@ -6,6 +6,7 @@ import { MoviesApi } from '@features/movies/data-access/movies-api';
 import { EnrichmentApi } from '@features/movies/data-access/enrichment-api';
 import { WebMovie } from '@features/movies/models/web-movie';
 import { MovieVisibility } from '@features/movies/models/web-movie';
+import { ActionsMenu } from '@shared/actions-menu';
 import { VisibilityModal } from '@features/movies/components/visibility-modal/visibility-modal';
 import { VisibilityJob } from '@features/movies/models/visibility';
 import { ToastService } from '@core/ui/toast.service';
@@ -16,7 +17,7 @@ type KindFilter = 'ALL' | 'MOVIE' | 'OTHER';
 
 @Component({
     selector: 'app-catalog-page',
-    imports: [FormsModule, VisibilityModal],
+    imports: [ActionsMenu, FormsModule, VisibilityModal],
     templateUrl: './catalog-page.html',
     styleUrl: './catalog-page.css',
 })
