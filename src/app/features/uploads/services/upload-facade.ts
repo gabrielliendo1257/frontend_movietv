@@ -13,7 +13,12 @@ import {
     tap,
     timer,
 } from 'rxjs';
-import { ACTIVE_UPLOAD_STATES, UploadTask } from '@features/uploads/models/upload-task';
+import {
+    ACTIVE_UPLOAD_STATES,
+    UploadDiagnostics,
+    UploadFailureCode,
+    UploadTask,
+} from '@features/uploads/models/upload-task';
 import { MediaKind } from '@features/movies/models/media-kind';
 import { MovieMetadata } from '@features/movies/models/movie-metadata';
 import {
@@ -76,13 +81,15 @@ export class UploadFacade {
                 metadata,
                 kind,
                 access,
+                failureCode: null,
+                diagnostics: null,
             },
             ...tasks,
         ]);
 
         // Defensa local del INVALID_INTENT del BFF: sin candidato no se viaja.
         if (!Number.isFinite(metadata.id) || metadata.id <= 0) {
-            this.fail(uploadId, 'Selecciona un candidato primero.');
+            this.fail(uploadId, 'Selecciona un candidato primero.', 'PREPARING_FAILED');
             return uploadId;
         }
 
@@ -112,7 +119,7 @@ export class UploadFacade {
                             : this.startProcess(uploadId, file);
                     }),
                     catchError((error) => {
-                        this.fail(uploadId, error);
+                        this.fail(uploadId, error, 'PREPARING_FAILED');
                         return EMPTY;
                     }),
                 )
@@ -138,7 +145,7 @@ export class UploadFacade {
             this.addMediaApi.status(task.fileFingerprint.addMediaId).pipe(
                 switchMap((process) => this.continueFrom(uploadId, process)),
                 catchError((error) => {
-                    this.fail(uploadId, error);
+                    this.fail(uploadId, error, 'PREPARING_FAILED');
                     return EMPTY;
                 }),
             ).subscribe(),
@@ -179,7 +186,7 @@ export class UploadFacade {
             this.startProcess(uploadId, file)
                 .pipe(
                     catchError((error) => {
-                        this.fail(uploadId, error);
+                        this.fail(uploadId, error, 'PREPARING_FAILED');
                         return EMPTY;
                     }),
                 )
@@ -213,7 +220,7 @@ export class UploadFacade {
                 this.finish(uploadId);
                 return EMPTY;
             case 'FAILED':
-                this.fail(uploadId, process.failureCode ?? 'ADD_MEDIA_FAILED');
+                this.fail(uploadId, process.failureCode ?? 'ADD_MEDIA_FAILED', 'VERIFICATION_FAILED');
                 return EMPTY;
             case 'CANCELLED':
             case 'CANCELLING':
@@ -234,8 +241,13 @@ export class UploadFacade {
 
     private uploadAndComplete(uploadId: string, process: AddMediaProcess): Observable<unknown> {
         const instructions = process.upload as UploadInstructions;
+        const startedAt = performance.now();
 
-        this.patchTask(uploadId, { state: 'uploading', progress: 0 });
+        this.patchTask(uploadId, {
+            state: 'uploading',
+            progress: 0,
+            diagnostics: createDiagnostics(instructions, this.taskById(uploadId)?.file),
+        });
 
         return from(Promise.resolve(this.taskById(uploadId)?.file ?? null)).pipe(
             switchMap((resolved) => {
@@ -247,6 +259,12 @@ export class UploadFacade {
                         if (event.type !== HttpEventType.UploadProgress) return;
                         this.patchTask(uploadId, {
                             progress: Math.round((100 * event.loaded) / (event.total ?? 1)),
+                            diagnostics: updateDiagnostics(
+                                this.taskById(uploadId)?.diagnostics ?? null,
+                                startedAt,
+                                event.loaded,
+                                event.total,
+                            ),
                         });
                     }),
                     filter((event) => event.type === HttpEventType.Response),
@@ -255,7 +273,7 @@ export class UploadFacade {
             }),
             switchMap((verdict) => this.continueFrom(uploadId, verdict)),
             catchError((error) => {
-                this.fail(uploadId, error);
+                this.fail(uploadId, error, classifyUploadFailure(error));
                 return EMPTY;
             }),
         );
@@ -270,11 +288,11 @@ export class UploadFacade {
                 if (final.phase === 'READY') {
                     this.finish(uploadId);
                 } else {
-                    this.fail(uploadId, final.failureCode ?? 'UPLOAD_VERIFICATION_FAILED');
+                    this.fail(uploadId, final.failureCode ?? 'UPLOAD_VERIFICATION_FAILED', 'VERIFICATION_FAILED');
                 }
             }),
             catchError(() => {
-                this.fail(uploadId, 'UPLOAD_VERIFICATION_TIMEOUT');
+                this.fail(uploadId, 'UPLOAD_VERIFICATION_TIMEOUT', 'VERIFICATION_FAILED');
                 return EMPTY;
             }),
         );
@@ -318,6 +336,8 @@ export class UploadFacade {
                 metadata: pendingMetadata(pending),
                 kind: pending.draft.kind ?? 'MOVIE',
                 access: pending.access,
+                failureCode: null,
+                diagnostics: null,
             },
             ...tasks,
         ]);
@@ -331,8 +351,21 @@ export class UploadFacade {
         this.persistence.clearPending(uploadId);
     }
 
-    private fail(uploadId: string, error: unknown): void {
-        this.patchTask(uploadId, { state: 'failed', error: toMessage(error) });
+    private fail(uploadId: string, error: unknown, failureCode: UploadFailureCode): void {
+        const task = this.taskById(uploadId);
+        const diagnostics = task?.diagnostics
+            ? { ...task.diagnostics, errorType: errorType(error) }
+            : null;
+        this.patchTask(uploadId, {
+            state: 'failed',
+            error: failureMessage(error, failureCode),
+            failureCode,
+            diagnostics,
+        });
+        if (diagnostics) {
+            // Nunca se registra la URL: solo el host extraído de las instrucciones.
+            console.warn('[UploadFacade] upload failure diagnostics', diagnostics);
+        }
         this.persistence.clearPending(uploadId);
     }
 
@@ -447,10 +480,22 @@ function pendingMetadata(pending: PendingAddMedia): MovieMetadata {
     };
 }
 
-/**
- * Mensaje legible priorizando el cuerpo del BFF: {code, error, message}
- * (p. ej. INVALID_INTENT, DOWNSTREAM_REJECTED con mensaje de Movies).
- */
+function failureMessage(error: unknown, failureCode: UploadFailureCode): string {
+    switch (failureCode) {
+        case 'UPLOAD_CONNECTION_INTERRUPTED':
+            return 'La conexión del upload se interrumpió. Revisa MinIO, la red o vuelve a intentarlo.';
+        case 'UPLOAD_EXPIRED':
+            return 'Las instrucciones del upload expiraron. Vuelve a intentarlo.';
+        case 'UPLOAD_REJECTED':
+            return 'MinIO rechazó el archivo. Revisa el tipo, tamaño o permisos y vuelve a intentarlo.';
+        case 'VERIFICATION_FAILED':
+            return 'La verificación del upload falló. Vuelve a intentarlo.';
+        case 'PREPARING_FAILED':
+            return `No se pudo preparar el upload. ${toMessage(error)}`;
+    }
+}
+
+/** Mensaje legible priorizando el cuerpo del BFF: {code, error, message}. */
 function toMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
         const body = error.error as { code?: number; error?: string; message?: string } | null;
@@ -460,11 +505,64 @@ function toMessage(error: unknown): string {
         if (error.status === 409) return 'La subida fue rechazada por el servidor.';
         if (error.status === 403) return 'No tienes permiso para añadir contenido.';
         if (error.status === 401) return 'Inicia sesión para añadir contenido.';
-        if (error.status === 0) return 'Sin conexión con el servidor.';
+        if (error.status === 0) return 'La conexión con el servidor fue interrumpida.';
         return `Error ${error.status} al procesar la subida.`;
     }
     if (error instanceof Error) return error.message;
     return typeof error === 'string' ? error : 'Upload failed.';
+}
+
+function classifyUploadFailure(error: unknown): UploadFailureCode {
+    if (!(error instanceof HttpErrorResponse)) return 'UPLOAD_CONNECTION_INTERRUPTED';
+    if (error.status === 0 || error.status === 408) return 'UPLOAD_CONNECTION_INTERRUPTED';
+    if (error.status === 401 || error.status === 403) return 'UPLOAD_EXPIRED';
+    return 'UPLOAD_REJECTED';
+}
+
+function createDiagnostics(
+    instructions: UploadInstructions,
+    file: File | null | undefined,
+): UploadDiagnostics {
+    return {
+        uploadHost: safeHost(instructions.url),
+        fileSize: file?.size ?? 0,
+        elapsedTimeMs: 0,
+        lastUploadedByte: 0,
+        lastProgressPercentage: 0,
+        errorType: null,
+    };
+}
+
+function updateDiagnostics(
+    current: UploadDiagnostics | null,
+    startedAt: number,
+    uploadedByte: number,
+    total: number | undefined,
+): UploadDiagnostics | null {
+    if (!current) return null;
+    return {
+        ...current,
+        elapsedTimeMs: Math.round(performance.now() - startedAt),
+        lastUploadedByte: uploadedByte,
+        lastProgressPercentage: Math.round((100 * uploadedByte) / (total || current.fileSize || 1)),
+    };
+}
+
+function safeHost(url: string): string | null {
+    try {
+        return new URL(url).host || null;
+    } catch {
+        return null;
+    }
+}
+
+function errorType(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+        const detail = error.error as { name?: string; type?: string } | null;
+        return detail?.name ?? detail?.type ?? error.name ?? 'HttpErrorResponse';
+    }
+    if (error instanceof Error) return error.name;
+    return typeof error;
 }
 
 /**

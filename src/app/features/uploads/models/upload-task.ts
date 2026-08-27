@@ -19,6 +19,22 @@ export const ACTIVE_UPLOAD_STATES: ReadonlySet<UploadState> = new Set<UploadStat
     'verifying',
 ]);
 
+export type UploadFailureCode =
+    | 'PREPARING_FAILED'
+    | 'UPLOAD_CONNECTION_INTERRUPTED'
+    | 'UPLOAD_EXPIRED'
+    | 'UPLOAD_REJECTED'
+    | 'VERIFICATION_FAILED';
+
+export interface UploadDiagnostics {
+    uploadHost: string | null;
+    fileSize: number;
+    elapsedTimeMs: number;
+    lastUploadedByte: number;
+    lastProgressPercentage: number;
+    errorType: string | null;
+}
+
 export interface UploadTask {
     /** Clave local de la tarea; es el idempotencyKey del proceso en el BFF. */
     readonly uploadId: string;
@@ -34,4 +50,6 @@ export interface UploadTask {
     /** Preferencia de acceso con la que se inició (o iniciará) el proceso. */
     readonly access?: InitialAccess;
     readonly error?: string | null;
+    readonly failureCode?: UploadFailureCode | null;
+    readonly diagnostics?: UploadDiagnostics | null;
 }

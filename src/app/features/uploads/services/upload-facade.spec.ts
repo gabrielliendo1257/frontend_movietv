@@ -1,7 +1,7 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { AddMediaApi } from '@features/uploads/data-access/add-media-api';
 import { UploadTask } from '@features/uploads/models/upload-task';
@@ -100,5 +100,29 @@ describe('UploadFacade', () => {
     await Promise.resolve();
 
     expect(addMediaApi.uploadToStorage).toHaveBeenCalledWith(file, instructions);
+  });
+
+  it('clasifica la interrupción del transporte sin registrar la firma del URL', async () => {
+    const file = new File(['abc'], 'movie.mp4', { type: 'video/mp4', lastModified: 456 });
+    const instructions = {
+      url: 'https://minio.test/upload?X-Amz-Signature=secret', method: 'PUT' as const,
+      storageKey: 'key', expectedSizeBytes: file.size, expectedMimeType: file.type,
+    };
+    addMediaApi.start.and.returnValue(of({
+      addMediaId: 'add-5', phase: 'WAITING_FOR_UPLOAD', movieId: null, uploadId: 'up-5',
+      upload: instructions, failureCode: null,
+    }));
+    addMediaApi.uploadToStorage.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 0, error: new ProgressEvent('error') })),
+    );
+
+    const uploadId = service.startUpload(file, { id: 5, title: 'Movie' } as MovieMetadata, 'MOVIE');
+    await Promise.resolve();
+
+    const task = service.taskById(uploadId);
+    expect(task?.failureCode).toBe('UPLOAD_CONNECTION_INTERRUPTED');
+    expect(task?.error).toContain('La conexión del upload se interrumpió');
+    expect(task?.diagnostics?.uploadHost).toBe('minio.test');
+    expect(task?.diagnostics?.uploadHost).not.toContain('X-Amz-Signature');
   });
 });
