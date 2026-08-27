@@ -2,6 +2,8 @@ import { inject, Injectable } from '@angular/core';
 import { InitialAccess, MovieDraft, UploadFileFingerprint } from '@features/uploads/models/add-media';
 
 const PENDING_KEY = 'pending-add-media';
+const LEGACY_DB_NAME = 'movieflix-uploads';
+const LEGACY_DB_CLEANED_KEY = 'movieflix-uploads-db-cleaned';
 
 /** Proceso de alta pendiente de cerrar; sobrevive recargas de página. */
 export interface PendingAddMedia {
@@ -16,6 +18,10 @@ export interface PendingAddMedia {
 
 @Injectable({ providedIn: 'root' })
 export class UploadSessionPersistence {
+    constructor() {
+        this.removeLegacyFileDatabase();
+    }
+
     savePending(pending: PendingAddMedia): void {
         localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
     }
@@ -45,6 +51,15 @@ export class UploadSessionPersistence {
 
     removePending(): void {
         localStorage.removeItem(PENDING_KEY);
+    }
+
+    private removeLegacyFileDatabase(): void {
+        if (typeof indexedDB === 'undefined' || localStorage.getItem(LEGACY_DB_CLEANED_KEY)) return;
+
+        const request = indexedDB.deleteDatabase(LEGACY_DB_NAME);
+        request.onsuccess = request.onerror = request.onblocked = () => {
+            localStorage.setItem(LEGACY_DB_CLEANED_KEY, '1');
+        };
     }
 
 }

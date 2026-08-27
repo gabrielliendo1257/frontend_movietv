@@ -1,9 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
+import { HttpResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
 import { AddMediaApi } from '@features/uploads/data-access/add-media-api';
 import { UploadTask } from '@features/uploads/models/upload-task';
+import { MovieMetadata } from '@features/movies/models/movie-metadata';
 import { UploadSessionPersistence } from './upload-session-persistence';
 import { UploadFacade } from './upload-facade';
 
@@ -12,12 +14,18 @@ describe('UploadFacade', () => {
   let addMediaApi: jasmine.SpyObj<AddMediaApi>;
 
   beforeEach(() => {
-    addMediaApi = jasmine.createSpyObj<AddMediaApi>('AddMediaApi', ['status']);
+    addMediaApi = jasmine.createSpyObj<AddMediaApi>('AddMediaApi', [
+      'status', 'start', 'uploadToStorage', 'complete',
+    ]);
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         { provide: AddMediaApi, useValue: addMediaApi },
-        { provide: UploadSessionPersistence, useValue: { loadPending: () => null, clearPending: () => undefined } },
+        { provide: UploadSessionPersistence, useValue: {
+          loadPending: () => null,
+          clearPending: () => undefined,
+          savePending: () => undefined,
+        } },
       ],
     });
     service = TestBed.inject(UploadFacade);
@@ -70,5 +78,27 @@ describe('UploadFacade', () => {
     expect(addMediaApi.status).not.toHaveBeenCalled();
     expect(service.taskById('idem-2')?.state).toBe('waiting_for_file');
     expect(service.taskById('idem-2')?.error).toContain('archivo original');
+  });
+
+  it('pasa el File en memoria directamente a uploadToStorage', async () => {
+    const file = new File(['x'], 'large-video.mkv', { type: 'video/x-matroska', lastModified: 456 });
+    Object.defineProperty(file, 'size', { value: 3 * 1024 * 1024 * 1024 });
+    const instructions = {
+      url: 'https://minio.test/upload', method: 'PUT' as const, storageKey: 'key',
+      expectedSizeBytes: file.size, expectedMimeType: file.type,
+    };
+    addMediaApi.start.and.returnValue(of({
+      addMediaId: 'add-3', phase: 'WAITING_FOR_UPLOAD', movieId: null, uploadId: 'up-3',
+      upload: instructions, failureCode: null,
+    }));
+    addMediaApi.uploadToStorage.and.returnValue(of(new HttpResponse({ body: null })));
+    addMediaApi.complete.and.returnValue(of({
+      addMediaId: 'add-3', phase: 'READY', movieId: 3, uploadId: 'up-3', upload: null, failureCode: null,
+    }));
+
+    service.startUpload(file, { id: 3, title: 'Large' } as MovieMetadata, 'MOVIE');
+    await Promise.resolve();
+
+    expect(addMediaApi.uploadToStorage).toHaveBeenCalledWith(file, instructions);
   });
 });
