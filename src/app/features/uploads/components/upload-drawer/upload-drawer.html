@@ -26,13 +26,21 @@
                         <span class="task-state" [class]="task.state">{{ stateLabel(task.state) }}</span>
                     </div>
 
-                    <div class="progress-track">
-                        <div
-                            class="progress-fill"
-                            [class.indeterminate]="task.state === 'starting' || task.state === 'verifying'"
-                            [style.width.%]="task.state === 'completed' ? 100 : task.progress"
-                        ></div>
-                    </div>
+                    @if (task.state === 'waiting_for_file') {
+                        <p class="resume-hint">Select the original file to resume</p>
+                        <label class="act-btn resume-btn">
+                            Select file
+                            <input type="file" class="file-reselect" (change)="reselect(task, $event)" />
+                        </label>
+                    } @else {
+                        <div class="progress-track">
+                            <div
+                                class="progress-fill"
+                                [class.indeterminate]="task.state === 'starting' || task.state === 'verifying'"
+                                [style.width.%]="task.state === 'completed' ? 100 : task.progress"
+                            ></div>
+                        </div>
+                    }
 
                     <div class="task-meta">
                         <span class="task-percent">

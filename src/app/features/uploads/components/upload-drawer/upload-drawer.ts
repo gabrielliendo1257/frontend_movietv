@@ -4,6 +4,7 @@ import { UploadFacade } from '@features/uploads/services/upload-facade';
 
 const STATE_LABELS: Record<UploadState, string> = {
     starting: 'Preparing',
+    waiting_for_file: 'Waiting for file',
     uploading: 'Uploading',
     verifying: 'Verifying',
     completed: 'Completed',
@@ -49,5 +50,12 @@ export class UploadDrawer {
 
     remove(task: UploadTask): void {
         this.facade.remove(task.uploadId);
+    }
+
+    reselect(task: UploadTask, event: Event): void {
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
+        input.value = '';
+        if (file) this.facade.reselectFile(task.uploadId, file);
     }
 }

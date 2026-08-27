@@ -88,6 +88,15 @@ export interface UploadInstructions {
     expectedMimeType: string;
 }
 
+/** Identidad local del archivo que el usuario debe volver a seleccionar. */
+export interface UploadFileFingerprint {
+    filename: string;
+    size: number;
+    mimeType: string;
+    lastModified: number;
+    addMediaId: string;
+}
+
 /** Vista del proceso de alta (AddMediaResponse del BFF). */
 export interface AddMediaProcess {
     addMediaId: string;

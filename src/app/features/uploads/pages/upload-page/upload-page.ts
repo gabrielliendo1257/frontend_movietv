@@ -8,7 +8,6 @@ import { UploadFacade } from '@features/uploads/services/upload-facade';
 import { ACTIVE_UPLOAD_STATES } from '@features/uploads/models/upload-task';
 import { InitialAccess, InitialVisibility } from '@features/uploads/models/add-media';
 import { MovieMetadata } from '@features/movies/models/movie-metadata';
-import { UploadSessionPersistence } from '@features/uploads/services/upload-session-persistence';
 import { MediaForm, MediaFormValue } from '@features/movies/components/media-form/media-form';
 import { MovieSearchModal } from '@features/uploads/components/movie-search-modal/movie-search-modal';
 import { ChipsInput } from '@features/uploads/components/chips-input/chips-input';
@@ -30,7 +29,6 @@ const VISIBILITY_OPTIONS: { value: InitialVisibility; label: string; hint: strin
 export class UploadPage {
     private readonly uploadFacade = inject(UploadFacade);
     private readonly toast = inject(ToastService);
-    private readonly fileStorage = inject(UploadSessionPersistence);
 
     private readonly draftSubject = new Subject<MovieMetadata>();
 
@@ -92,7 +90,6 @@ export class UploadPage {
         const file = input.files?.[0];
         if (!file) return;
         this.file.set(file);
-        void this.fileStorage.saveDraftFile(file).catch(() => undefined);
         input.value = '';
     }
 
@@ -181,16 +178,12 @@ export class UploadPage {
             }
         }
 
-        void this.fileStorage.loadDraftFile().then((file) => {
-            if (file) this.file.set(file);
-        });
     }
 
     private clearDrafts(): void {
         localStorage.removeItem(DRAFT_METADATA_KEY);
         this.metadata.set(null);
         this.file.set(null);
-        void this.fileStorage.clearDraftFile().catch(() => undefined);
     }
 }
 

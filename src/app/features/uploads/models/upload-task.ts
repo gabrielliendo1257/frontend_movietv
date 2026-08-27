@@ -1,10 +1,11 @@
 import { MediaKind } from '@features/movies/models/media-kind';
 import { MovieMetadata } from '@features/movies/models/movie-metadata';
-import { InitialAccess } from '@features/uploads/models/add-media';
+import { InitialAccess, UploadFileFingerprint } from '@features/uploads/models/add-media';
 
 /** Estados que le interesan a la UX; el detalle fino vive en AddMediaPhase del BFF. */
 export type UploadState =
     | 'starting'
+    | 'waiting_for_file'
     | 'uploading'
     | 'verifying'
     | 'completed'
@@ -13,6 +14,7 @@ export type UploadState =
 
 export const ACTIVE_UPLOAD_STATES: ReadonlySet<UploadState> = new Set<UploadState>([
     'starting',
+    'waiting_for_file',
     'uploading',
     'verifying',
 ]);
@@ -24,6 +26,7 @@ export interface UploadTask {
     readonly movieId: number | null;
     readonly file: File | null;
     readonly fileName: string;
+    readonly fileFingerprint: UploadFileFingerprint | null;
     readonly progress: number;
     readonly state: UploadState;
     readonly metadata: MovieMetadata;

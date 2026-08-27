@@ -7,7 +7,6 @@ import {
     Subscription,
     catchError,
     filter,
-    map,
     switchMap,
     take,
     takeWhile,
@@ -22,6 +21,7 @@ import {
     InitialAccess,
     MovieDraft,
     StartAddMediaCommand,
+    UploadFileFingerprint,
     UploadInstructions,
 } from '@features/uploads/models/add-media';
 import { PendingAddMedia, UploadSessionPersistence } from '@features/uploads/services/upload-session-persistence';
@@ -70,6 +70,7 @@ export class UploadFacade {
                 movieId: null,
                 file,
                 fileName: file.name,
+                fileFingerprint: null,
                 progress: 0,
                 state: 'starting',
                 metadata,
@@ -85,7 +86,6 @@ export class UploadFacade {
             return uploadId;
         }
 
-        void this.persistence.saveFile(uploadId, file).catch(() => undefined);
         this.runStart(uploadId, file);
 
         return uploadId;
@@ -99,9 +99,8 @@ export class UploadFacade {
         this.patchTask(uploadId, { state: 'starting', error: null });
         this.trackSubscription(
             uploadId,
-            from(this.persistence.loadFile(uploadId))
+            from(Promise.resolve(task.file))
                 .pipe(
-                    map((file) => file ?? this.taskById(uploadId)?.file ?? null),
                     switchMap((file) => {
                         if (!file) throw new Error('Upload session expired.');
                         this.patchTask(uploadId, { file });
@@ -118,6 +117,31 @@ export class UploadFacade {
                     }),
                 )
                 .subscribe(),
+        );
+    }
+
+    /** Reintenta un proceso recuperado después de seleccionar el archivo original. */
+    reselectFile(uploadId: string, file: File): void {
+        const task = this.taskById(uploadId);
+        if (!task || task.state !== 'waiting_for_file' || !task.fileFingerprint) return;
+
+        if (!sameFingerprint(file, task.fileFingerprint)) {
+            this.patchTask(uploadId, {
+                error: `Selecciona el archivo original: ${task.fileFingerprint.filename}`,
+            });
+            return;
+        }
+
+        this.patchTask(uploadId, { file, state: 'starting', error: null });
+        this.trackSubscription(
+            uploadId,
+            this.addMediaApi.status(task.fileFingerprint.addMediaId).pipe(
+                switchMap((process) => this.continueFrom(uploadId, process)),
+                catchError((error) => {
+                    this.fail(uploadId, error);
+                    return EMPTY;
+                }),
+            ).subscribe(),
         );
     }
 
@@ -140,7 +164,6 @@ export class UploadFacade {
     remove(uploadId: string): void {
         this.cancel(uploadId);
         this.tasks.update((tasks) => tasks.filter((task) => task.uploadId !== uploadId));
-        void this.persistence.deleteFile(uploadId).catch(() => undefined);
     }
 
     taskById(uploadId: string): UploadTask | null {
@@ -172,7 +195,11 @@ export class UploadFacade {
         const command = toCommand(uploadId, file, task.metadata, task.kind, task.access);
 
         return this.addMediaApi.start(command).pipe(
-            tap((process) => this.persistence.savePending(toPending(uploadId, task, process))),
+            tap((process) => {
+                const fingerprint = fingerprintFrom(task.file!, process.addMediaId);
+                this.patchTask(uploadId, { fileFingerprint: fingerprint });
+                this.persistence.savePending(toPending(uploadId, task, process, fingerprint));
+            }),
             switchMap((process) => this.continueFrom(uploadId, process)),
         );
     }
@@ -210,9 +237,8 @@ export class UploadFacade {
 
         this.patchTask(uploadId, { state: 'uploading', progress: 0 });
 
-        return from(this.persistence.loadFile(uploadId)).pipe(
-            switchMap((file) => {
-                const resolved = file ?? this.taskById(uploadId)?.file ?? null;
+        return from(Promise.resolve(this.taskById(uploadId)?.file ?? null)).pipe(
+            switchMap((resolved) => {
                 if (!resolved) throw new Error('Upload session expired.');
                 this.patchTask(uploadId, { file: resolved });
 
@@ -285,9 +311,10 @@ export class UploadFacade {
                 addMediaId: pending.addMediaId,
                 movieId: pending.movieId,
                 file: null,
-                fileName: pending.fileName,
+                fileName: pending.fileFingerprint.filename,
+                fileFingerprint: pending.fileFingerprint,
                 progress: 0,
-                state: 'starting',
+                state: 'waiting_for_file',
                 metadata: pendingMetadata(pending),
                 kind: pending.draft.kind ?? 'MOVIE',
                 access: pending.access,
@@ -295,29 +322,6 @@ export class UploadFacade {
             ...tasks,
         ]);
 
-        this.trackSubscription(
-            pending.idempotencyKey,
-            from(this.persistence.loadFile(pending.idempotencyKey))
-                .pipe(
-                    tap((file) => {
-                        if (file) this.patchTask(pending.idempotencyKey, { file });
-                    }),
-                    switchMap(() =>
-                        pending.addMediaId
-                            ? this.addMediaApi.status(pending.addMediaId).pipe(
-                                  switchMap((process) =>
-                                      this.continueFrom(pending.idempotencyKey, process),
-                                  ),
-                              )
-                            : EMPTY,
-                    ),
-                    catchError((error) => {
-                        this.fail(pending.idempotencyKey, error);
-                        return EMPTY;
-                    }),
-                )
-                .subscribe(),
-        );
     }
 
     // ─── Helpers ───
@@ -370,16 +374,36 @@ function toPending(
     idempotencyKey: string,
     task: UploadTask,
     process: AddMediaProcess,
+    fileFingerprint: UploadFileFingerprint,
 ): PendingAddMedia {
     return {
         idempotencyKey,
         addMediaId: process.addMediaId,
         movieId: process.movieId,
-        fileName: task.fileName,
+        fileFingerprint,
         providerId: task.metadata.id,
         draft: toDraft(task.metadata, task.kind),
         access: task.access,
     };
+}
+
+function fingerprintFrom(file: File, addMediaId: string): UploadFileFingerprint {
+    return {
+        filename: file.name,
+        size: file.size,
+        mimeType: file.type || 'application/octet-stream',
+        lastModified: file.lastModified,
+        addMediaId,
+    };
+}
+
+function sameFingerprint(file: File, fingerprint: UploadFileFingerprint): boolean {
+    return (
+        file.name === fingerprint.filename &&
+        file.size === fingerprint.size &&
+        (file.type || 'application/octet-stream') === fingerprint.mimeType &&
+        file.lastModified === fingerprint.lastModified
+    );
 }
 
 function toDraft(metadata: MovieMetadata, kind: MediaKind): MovieDraft {
